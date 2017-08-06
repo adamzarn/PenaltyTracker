@@ -14,6 +14,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
     var currentUser: User?
+    
+    var darkBlueColor = UIColor(red: 80.0/255.0, green: 99.0/255.0, blue: 130.0/255.0, alpha: 1.0)
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.

@@ -69,11 +69,39 @@ class CalendarCell: JTAppleCell {
 
 class MyNavigationController: UINavigationController, UIViewControllerTransitioningDelegate {
     
+    let appDelegate = UIApplication.shared.delegate as! AppDelegate
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        self.navigationBar.barTintColor = UIColor.black
+        self.navigationBar.barTintColor = appDelegate.darkBlueColor
         self.navigationBar.tintColor = UIColor.white
         self.navigationBar.titleTextAttributes = [NSForegroundColorAttributeName: UIColor.white]
     }
+}
+
+class EventCell: UITableViewCell {
+    
+    let appDelegate = UIApplication.shared.delegate as! AppDelegate
+    
+    @IBOutlet weak var eventNameLabel: UILabel!
+    @IBOutlet weak var locationLabel: UILabel!
+    @IBOutlet weak var dateLabel: UILabel!
+    @IBOutlet weak var timeLabel: UILabel!
+    @IBOutlet weak var createdByLabel: UILabel!
+    
+    func setUpCell(event: Event) {
+        
+        eventNameLabel.attributedText = GlobalFunctions.shared.bold(string: event.name, size: 14.0, color: .black)
+        
+        locationLabel.attributedText = GlobalFunctions.shared.italic(string: event.city + ", " + event.state, size: 14.0, color: .black)
+        
+        dateLabel.attributedText = GlobalFunctions.shared.bold(string: event.date, size: 14.0, color: appDelegate.darkBlueColor)
+        
+        timeLabel.text = event.startTime + " to " + event.endTime
+        
+        createdByLabel.text = "Created by: \(event.adminName)"
+        createdByLabel.textColor = .lightGray
+    }
+    
 }

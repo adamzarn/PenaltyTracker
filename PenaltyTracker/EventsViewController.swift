@@ -90,9 +90,8 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell")!
-        cell.textLabel?.text = events[indexPath.row].name
-        print(events[indexPath.row].name)
+        let cell = tableView.dequeueReusableCell(withIdentifier: "eventCell") as! EventCell
+        cell.setUpCell(event: events[indexPath.row])
         return cell
         
     }

@@ -10,7 +10,7 @@ import UIKit
 import Firebase
 import JTAppleCalendar
 
-class CreateEventViewController: UIViewController {
+class CreateEventViewController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var calendarView: JTAppleCalendarView!
     @IBOutlet weak var monthLabel: UILabel!
@@ -38,6 +38,16 @@ class CreateEventViewController: UIViewController {
         }
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(false)
+        subscribeToKeyboardNotifications()
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillAppear(false)
+        unsubscribeFromKeyboardNotifications()
+    }
+    
     func setUpHeader(from visibleDates: DateSegmentInfo) {
         let date = visibleDates.monthDates.first!.date
         formatter.dateFormat = "MMMM yyyy"
@@ -52,28 +62,85 @@ class CreateEventViewController: UIViewController {
         let startTime = startTimeTextField.text!
         let endTime = endTimeTextField.text!
         let selectedDate = calendarView.selectedDates[0]
-        formatter.dateFormat = "yyyy MM dd"
+        formatter.dateFormat = "M/d/yy"
         let date = formatter.string(from: selectedDate)
         let pin = "\(pin1.text!)\(pin2.text!)\(pin3.text!)\(pin4.text!)"
         let admin = Auth.auth().currentUser?.uid
         let adminName = appDelegate.currentUser?.name
         
         let event = Event(name: name, pin: pin, city: city, state: state, date: date, startTime: startTime, endTime: endTime, admin: admin!, adminName: adminName!)
+        
+        let message = "Does everything look correct? \n\n Event: \(name) \n Location: \(city), \(state) \n Start Time: \(startTime) \n End Time: \(endTime) \n PIN: \(pin) \n Created by: \(adminName!)"
+        
+        let confirmEventDetails = UIAlertController(title: "Confirm Event Details", message: message, preferredStyle: .alert)
+        
+        let submitAction = UIAlertAction(title: "Submit", style: .default) { (_) in
 
-        FirebaseClient.shared.createEvent(event: event) { (success) -> () in
-            if let success = success {
-                if success {
-                    print("success")
+            FirebaseClient.shared.createEvent(event: event) { (success) -> () in
+                if let success = success {
+                    if success {
+                        let alert = UIAlertController(title: "Success!", message: "Your event was successfully created. We'll take you to the Events list now where you can access it.", preferredStyle: .alert)
+                        alert.addAction(UIAlertAction(title: "OK", style: .default) { (_) in
+                            self.navigationController?.popToRootViewController(animated: true)
+                        })
+                        self.present(alert, animated: false, completion: nil)
+                    } else {
+                        self.displayAlert(title: "Error", message: "We were unable to create your event. Please try again.")
+                    }
                 } else {
-                    print("failure")
+                    self.displayAlert(title: "Error", message: "We were unable to create your event. Please try again.")
                 }
-            } else {
-                print("unknown error")
             }
         }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (_) in }
+        
+        confirmEventDetails.addAction(cancelAction)
+        confirmEventDetails.addAction(submitAction)
+        
+        self.present(confirmEventDetails, animated: false, completion: nil)
 
     }
     
+    func displayAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        self.present(alert, animated: false, completion: nil)
+    }
+    
+    //Adjusting keyboard methods
+    
+    func subscribeToKeyboardNotifications() {
+        NotificationCenter.default.addObserver(self, selector: #selector(LoginViewController.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow,object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(LoginViewController.keyboardWillHide),name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+    }
+    
+    func unsubscribeFromKeyboardNotifications() {
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIKeyboardWillShow, object: nil)
+    }
+    
+    func keyboardWillShow(notification: Notification) {
+        if pin1.isFirstResponder || pin2.isFirstResponder || pin3.isFirstResponder || pin4.isFirstResponder {
+            view.frame.origin.y = (-1*getKeyboardHeight(notification: notification)) + (self.navigationController?.navigationBar.frame.size.height)! + UIApplication.shared.statusBarFrame.size.height
+        }
+    }
+    
+    func keyboardWillHide(notification: Notification) {
+        view.frame.origin.y = (self.navigationController?.navigationBar.frame.size.height)! + UIApplication.shared.statusBarFrame.size.height
+    }
+    
+    func getKeyboardHeight(notification: Notification) -> CGFloat {
+        let userInfo = notification.userInfo!
+        let keyboardSize = userInfo[UIKeyboardFrameEndUserInfoKey] as! NSValue
+        return keyboardSize.cgRectValue.height
+    }
+    
+    //Text Field Delegate Methods
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
+    }
     
 }
 

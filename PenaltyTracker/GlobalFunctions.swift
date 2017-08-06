@@ -19,6 +19,19 @@ class GlobalFunctions: NSObject {
         }
     }
     
+    func bold(string: String, size: CGFloat, color: UIColor) -> NSMutableAttributedString {
+        let attrs = [NSFontAttributeName : UIFont.boldSystemFont(ofSize: size),
+                     NSForegroundColorAttributeName: color]
+        let attributedString = NSMutableAttributedString(string: string, attributes:attrs)
+        return attributedString
+    }
+    
+    func italic(string: String, size: CGFloat, color: UIColor) -> NSMutableAttributedString {
+        let attrs = [NSFontAttributeName : UIFont.italicSystemFont(ofSize: size), NSForegroundColorAttributeName: color]
+        let attributedString = NSMutableAttributedString(string: string, attributes:attrs)
+        return attributedString
+    }
+    
     static let shared = GlobalFunctions()
     private override init() {
         super.init()
