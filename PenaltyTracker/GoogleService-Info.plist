@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AD_UNIT_ID_FOR_BANNER_TEST</key>
+	<string>ca-app-pub-3940256099942544/2934735716</string>
+	<key>AD_UNIT_ID_FOR_INTERSTITIAL_TEST</key>
+	<string>ca-app-pub-3940256099942544/4411468910</string>
+	<key>CLIENT_ID</key>
+	<string>475155094616-l21eipmq1pra0fa21ei237k7r8ggialc.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.475155094616-l21eipmq1pra0fa21ei237k7r8ggialc</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAc-K6J7bnvOt1701YQT9xU_2JHUKRpRzk</string>
+	<key>GCM_SENDER_ID</key>
+	<string>475155094616</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>AJZ.PenaltyTracker</string>
+	<key>PROJECT_ID</key>
+	<string>penaltytracker-34515</string>
+	<key>STORAGE_BUCKET</key>
+	<string>penaltytracker-34515.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<true/>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	<key>IS_APPINVITE_ENABLED</key>
+	<false/>
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true/>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:475155094616:ios:c4087e4edba9becb</string>
+	<key>DATABASE_URL</key>
+	<string>https://penaltytracker-34515.firebaseio.com</string>
+</dict>
+</plist>

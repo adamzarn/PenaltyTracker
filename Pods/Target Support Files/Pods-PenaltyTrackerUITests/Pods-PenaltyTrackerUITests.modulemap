@@ -1,0 +1,6 @@
+framework module Pods_PenaltyTrackerUITests {
+  umbrella header "Pods-PenaltyTrackerUITests-umbrella.h"
+
+  export *
+  module * { export * }
+}
