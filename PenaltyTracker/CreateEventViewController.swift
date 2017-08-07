@@ -10,7 +10,7 @@ import UIKit
 import Firebase
 import JTAppleCalendar
 
-class CreateEventViewController: UIViewController, UITextFieldDelegate {
+class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPickerViewDelegate, UIPickerViewDataSource {
     
     @IBOutlet weak var calendarView: JTAppleCalendarView!
     @IBOutlet weak var monthLabel: UILabel!
@@ -24,9 +24,46 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var pin3: UITextField!
     @IBOutlet weak var pin4: UITextField!
     
+    var statePicker: UIPickerView!
+    let stateOptions = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
+                        "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT",
+                        "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
+                        "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
+    
+    var timePicker: UIPickerView!
+    let timeOptions = ["12:00 AM", "12:15 AM", "12:30 AM", "12:45 AM",
+                       "1:00 AM",  "1:15 AM",  "1:30 AM",  "1:45 AM",
+                       "2:00 AM",  "2:15 AM",  "2:30 AM",  "2:45 AM",
+                       "3:00 AM",  "3:15 AM",  "3:30 AM",  "3:45 AM",
+                       "4:00 AM",  "4:15 AM",  "4:30 AM",  "4:45 AM",
+                       "5:00 AM",  "5:15 AM",  "5:30 AM",  "5:45 AM",
+                       "6:00 AM",  "6:15 AM",  "6:30 AM",  "6:45 AM",
+                       "7:00 AM",  "7:15 AM",  "7:30 AM",  "7:45 AM",
+                       "8:00 AM",  "8:15 AM",  "8:30 AM",  "8:45 AM",
+                       "9:00 AM",  "9:15 AM",  "9:30 AM",  "9:45 AM",
+                       "10:00 AM", "10:15 AM", "10:30 AM", "10:45 AM",
+                       "11:00 AM", "11:15 AM", "11:30 AM", "11:45 AM",
+                       "12:00 PM", "12:15 PM", "12:30 PM", "12:45 PM",
+                       "1:00 PM",  "1:15 PM",  "1:30 PM",  "1:45 PM",
+                       "2:00 PM",  "2:15 PM",  "2:30 PM",  "2:45 PM",
+                       "3:00 PM",  "3:15 PM",  "3:30 PM",  "3:45 PM",
+                       "4:00 PM",  "4:15 PM",  "4:30 PM",  "4:45 PM",
+                       "5:00 PM",  "5:15 PM",  "5:30 PM",  "5:45 PM",
+                       "6:00 PM",  "6:15 PM",  "6:30 PM",  "6:45 PM",
+                       "7:00 PM",  "7:15 PM",  "7:30 PM",  "7:45 PM",
+                       "8:00 PM",  "8:15 PM",  "8:30 PM",  "8:45 PM",
+                       "9:00 PM",  "9:15 PM",  "9:30 PM",  "9:45 PM",
+                       "10:00 PM", "10:15 PM", "10:30 PM", "10:45 PM",
+                       "11:00 PM", "11:15 PM", "11:30 PM", "11:45 PM"]
+
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
     
     let formatter = DateFormatter()
+    
+    var currentTextField: UITextField?
+    
+    let screenWidth = UIScreen.main.bounds.width
+    let screenHeight = UIScreen.main.bounds.height
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -36,6 +73,48 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate {
         calendarView.visibleDates { (visibleDates) in
             self.setUpHeader(from: visibleDates)
         }
+        
+        pin1.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        pin2.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        pin3.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        
+        let toolBar = UIToolbar(frame: CGRect(x: 0, y: 0, width: screenWidth, height: 44))
+        toolBar.barStyle = .default
+        let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil)
+        let done = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(dismissKeyboard))
+        
+        toolBar.items = [flex, done]
+        
+        statePicker = UIPickerView(frame: CGRect(x: 0, y: toolBar.frame.size.height, width: screenWidth, height: 150))
+        statePicker.delegate = self
+        statePicker.dataSource = self
+        statePicker.showsSelectionIndicator = true
+        
+        let stateInputView = UIView(frame:CGRect(x: 0, y: 0, width: screenWidth, height: toolBar.frame.size.height + statePicker.frame.size.height))
+        stateInputView.backgroundColor = .clear
+        stateInputView.addSubview(statePicker)
+        stateTextField.inputView = stateInputView
+        stateTextField.inputAccessoryView = toolBar
+        
+        timePicker = UIPickerView(frame: CGRect(x: 0, y: toolBar.frame.size.height, width: screenWidth, height: 150))
+        timePicker.delegate = self
+        timePicker.dataSource = self
+        timePicker.showsSelectionIndicator = true
+        
+        let timeInputView = UIView(frame:CGRect(x: 0, y: 0, width: screenWidth, height: toolBar.frame.size.height + statePicker.frame.size.height))
+        timeInputView.backgroundColor = .clear
+        timeInputView.addSubview(timePicker)
+        
+        startTimeTextField.inputView = timeInputView
+        startTimeTextField.inputAccessoryView = toolBar
+        endTimeTextField.inputView = timeInputView
+        endTimeTextField.inputAccessoryView = toolBar
+        
+        pin1.inputAccessoryView = toolBar
+        pin2.inputAccessoryView = toolBar
+        pin3.inputAccessoryView = toolBar
+        pin4.inputAccessoryView = toolBar
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -56,6 +135,49 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate {
     
     @IBAction func submitButtonPressed(_ sender: Any) {
         
+        if nameTextField.text! == "" {
+            displayAlert(title: "No Name", message: "You must give this event a name.")
+            return
+        }
+        
+        if cityTextField.text! == "" {
+            displayAlert(title: "No City", message: "You must specify a city for this event.")
+            return
+        }
+        
+        if stateTextField.text! == "" {
+            displayAlert(title: "No State", message: "You must specify a state for this event.")
+            return
+        }
+        
+        if startTimeTextField.text! == "" {
+            displayAlert(title: "No Start Time", message: "You must specify a start time for this event.")
+            return
+        }
+        
+        if endTimeTextField.text! == "" {
+            displayAlert(title: "No End Time", message: "You must specify an end time for this event.")
+            return
+        }
+        
+        let start = timeOptions.index(of: startTimeTextField.text!)!
+        let end = timeOptions.index(of: endTimeTextField.text!)!
+        
+        if start >= end {
+            displayAlert(title: "Bad Start and End Times", message: "The start time must be before the end time.")
+            return
+        }
+        
+        if calendarView.selectedDates.count == 0 {
+            displayAlert(title: "No Date", message: "You must select a date for this event.")
+            return
+        }
+        
+        if pin1.text == "" || pin2.text == "" || pin3.text == "" || pin4.text == "" {
+            displayAlert(title: "Bad Access PIN", message: "The Access PIN must contain 4 digits.")
+            return
+        }
+    
         let name = nameTextField.text!
         let city = cityTextField.text!
         let state = stateTextField.text!
@@ -135,11 +257,77 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate {
         return keyboardSize.cgRectValue.height
     }
     
+    func dismissKeyboard() {
+        currentTextField?.resignFirstResponder()
+    }
+    
     //Text Field Delegate Methods
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
         return true
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        if [pin1, pin2, pin3, pin4].contains(textField) {
+            textField.text = ""
+        }
+        currentTextField = textField
+        textField.becomeFirstResponder()
+    }
+    
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool  {
+        
+        if [pin1, pin2, pin3, pin4].contains(textField) {
+            let currentCharacterCount = textField.text?.characters.count ?? 0
+            if (range.length + range.location > currentCharacterCount){
+                return false
+            }
+            let newLength = currentCharacterCount + string.characters.count - range.length
+            return newLength <= 1
+        }
+        
+        return true
+    }
+    
+    func textFieldDidChange(_ textField: UITextField) {
+        if textField == pin1 {
+            pin2.becomeFirstResponder()
+        } else if textField == pin2 {
+            pin3.becomeFirstResponder()
+        } else if textField == pin3 {
+            pin4.becomeFirstResponder()
+        }
+    }
+    
+    //PickerView Delegate methods
+    
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        if pickerView == statePicker {
+            return stateOptions.count
+        } else {
+            return timeOptions.count
+        }
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        if pickerView == statePicker {
+            return stateOptions[row]
+        } else {
+            return timeOptions[row]
+        }
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        if pickerView == statePicker {
+            stateTextField.text = stateOptions[row]
+        } else {
+            currentTextField!.text = timeOptions[row]
+        }
     }
     
 }
