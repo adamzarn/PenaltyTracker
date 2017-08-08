@@ -15,7 +15,6 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     
     var events: [Event] = []
     var filteredEvents: [Event] = []
-    
 
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     @IBOutlet weak var loadingLabel: UILabel!
@@ -37,8 +36,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
         searchController.definesPresentationContext = false
         searchController.hidesNavigationBarDuringPresentation = false
         myTableView.tableHeaderView = searchController.searchBar
-        
-        self.navigationController?.navigationBar.isTranslucent = false
+    
         
     }
     
@@ -53,7 +51,6 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
             FirebaseClient.shared.getEvents() { (events, error) -> () in
                 if let events = events {
                     self.events = events
-                    print(self.events.count)
                 } else {
                     print(error!)
                 }
@@ -98,10 +95,17 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: false)
+        let penaltiesVC = storyboard?.instantiateViewController(withIdentifier: "PenaltiesTableViewController") as! PenaltiesTableViewController
+        penaltiesVC.event = events[indexPath.row]
+        self.navigationController?.pushViewController(penaltiesVC, animated: true)
     }
     
     func filterContentForSearchText(searchText: String, scope: String = "All") {
         
+    }
+
+    @IBAction func logoutButtonPressed(_ sender: Any) {
+        FirebaseClient.shared.logout(vc: self)
     }
     
     @IBAction func createEventButtonPressed(_ sender: Any) {

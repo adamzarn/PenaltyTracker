@@ -23,6 +23,7 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     @IBOutlet weak var pin2: UITextField!
     @IBOutlet weak var pin3: UITextField!
     @IBOutlet weak var pin4: UITextField!
+    @IBOutlet weak var submitButton: UIButton!
     
     var statePicker: UIPickerView!
     let stateOptions = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
@@ -115,6 +116,8 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         pin3.inputAccessoryView = toolBar
         pin4.inputAccessoryView = toolBar
         
+        submitButton.setTitleColor(appDelegate.darkBlueColor, for: .normal)
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -186,11 +189,12 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         let selectedDate = calendarView.selectedDates[0]
         formatter.dateFormat = "M/d/yy"
         let date = formatter.string(from: selectedDate)
+        let createdDate = formatter.string(from: Date())
         let pin = "\(pin1.text!)\(pin2.text!)\(pin3.text!)\(pin4.text!)"
         let admin = Auth.auth().currentUser?.uid
         let adminName = appDelegate.currentUser?.name
         
-        let event = Event(name: name, pin: pin, city: city, state: state, date: date, startTime: startTime, endTime: endTime, admin: admin!, adminName: adminName!)
+        let event = Event(uid: "", name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, startTime: startTime, endTime: endTime, admin: admin!, adminName: adminName!)
         
         let message = "Does everything look correct? \n\n Event: \(name) \n Location: \(city), \(state) \n Start Time: \(startTime) \n End Time: \(endTime) \n PIN: \(pin) \n Created by: \(adminName!)"
         
@@ -404,9 +408,7 @@ extension CreateEventViewController: JTAppleCalendarViewDelegate, JTAppleCalenda
     }
     
     func calendar(_ calendar: JTAppleCalendarView, didScrollToDateSegmentWith visibleDates: DateSegmentInfo) {
-        
         setUpHeader(from: visibleDates)
-        
     }
     
     

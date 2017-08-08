@@ -11,17 +11,22 @@ import Firebase
 
 class CreateAccountViewController: UIViewController {
     
+    let appDelegate = UIApplication.shared.delegate as! AppDelegate
+    
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     
     @IBOutlet weak var nameTextField: UITextField!
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
     @IBOutlet weak var verifyPasswordTextField: UITextField!
+    @IBOutlet weak var submitButton: UIButton!
     
     //Lifecycle methods
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        submitButton.setTitleColor(appDelegate.darkBlueColor, for: .normal)
         
     }
     

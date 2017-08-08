@@ -23,6 +23,9 @@
 		DB48140D1F3554CB00ADFDE9 /* FirebaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB48140C1F3554CB00ADFDE9 /* FirebaseClient.swift */; };
 		DB48140F1F355EAF00ADFDE9 /* CustomObjects.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB48140E1F355EAF00ADFDE9 /* CustomObjects.swift */; };
 		DB4814111F3560E200ADFDE9 /* EventsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB4814101F3560E200ADFDE9 /* EventsViewController.swift */; };
+		DB5D34E01F38214500E197D4 /* PenaltiesTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5D34DF1F38214500E197D4 /* PenaltiesTableViewController.swift */; };
+		DB5D34E21F38215700E197D4 /* LogPenaltyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5D34E11F38215700E197D4 /* LogPenaltyViewController.swift */; };
+		DB5D34E41F3A332500E197D4 /* checkmark.png in Resources */ = {isa = PBXBuildFile; fileRef = DB5D34E31F3A332500E197D4 /* checkmark.png */; };
 		DB8E5D221F35781B00FDDE7C /* CreateEventViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB8E5D211F35781B00FDDE7C /* CreateEventViewController.swift */; };
 		E0EF61643D7C58433519267B /* Pods_PenaltyTrackerUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E5C6A13C5A4D152FF2F7A45 /* Pods_PenaltyTrackerUITests.framework */; };
 /* End PBXBuildFile section */
@@ -73,6 +76,9 @@
 		DB48140C1F3554CB00ADFDE9 /* FirebaseClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FirebaseClient.swift; sourceTree = "<group>"; };
 		DB48140E1F355EAF00ADFDE9 /* CustomObjects.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomObjects.swift; sourceTree = "<group>"; };
 		DB4814101F3560E200ADFDE9 /* EventsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EventsViewController.swift; sourceTree = "<group>"; };
+		DB5D34DF1F38214500E197D4 /* PenaltiesTableViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PenaltiesTableViewController.swift; sourceTree = "<group>"; };
+		DB5D34E11F38215700E197D4 /* LogPenaltyViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LogPenaltyViewController.swift; sourceTree = "<group>"; };
+		DB5D34E31F3A332500E197D4 /* checkmark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = checkmark.png; sourceTree = "<group>"; };
 		DB8E5D211F35781B00FDDE7C /* CreateEventViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreateEventViewController.swift; sourceTree = "<group>"; };
 		FFF9E517E82A1C676B3D3F26 /* Pods-PenaltyTracker.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PenaltyTracker.release.xcconfig"; path = "Pods/Target Support Files/Pods-PenaltyTracker/Pods-PenaltyTracker.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -191,6 +197,8 @@
 				DB4814031F354DA300ADFDE9 /* CreateAccountViewController.swift */,
 				DB4814101F3560E200ADFDE9 /* EventsViewController.swift */,
 				DB8E5D211F35781B00FDDE7C /* CreateEventViewController.swift */,
+				DB5D34DF1F38214500E197D4 /* PenaltiesTableViewController.swift */,
+				DB5D34E11F38215700E197D4 /* LogPenaltyViewController.swift */,
 			);
 			name = Controller;
 			sourceTree = "<group>";
@@ -208,6 +216,7 @@
 			children = (
 				DB27C3821F3546B400ACED5A /* Main.storyboard */,
 				DB27C3851F3546B400ACED5A /* Assets.xcassets */,
+				DB5D34E31F3A332500E197D4 /* checkmark.png */,
 				DB27C3871F3546B400ACED5A /* LaunchScreen.storyboard */,
 			);
 			name = View;
@@ -333,6 +342,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DB27C3891F3546B400ACED5A /* LaunchScreen.storyboard in Resources */,
+				DB5D34E41F3A332500E197D4 /* checkmark.png in Resources */,
 				DB27C3AD1F354D0E00ACED5A /* GoogleService-Info.plist in Resources */,
 				DB27C3861F3546B400ACED5A /* Assets.xcassets in Resources */,
 				DB27C3841F3546B400ACED5A /* Main.storyboard in Resources */,
@@ -498,11 +508,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DB5D34E21F38215700E197D4 /* LogPenaltyViewController.swift in Sources */,
 				DB4814041F354DA300ADFDE9 /* CreateAccountViewController.swift in Sources */,
 				DB4814111F3560E200ADFDE9 /* EventsViewController.swift in Sources */,
 				DB27C3811F3546B400ACED5A /* LoginViewController.swift in Sources */,
 				DB4814091F35520100ADFDE9 /* GlobalFunctions.swift in Sources */,
 				DB48140F1F355EAF00ADFDE9 /* CustomObjects.swift in Sources */,
+				DB5D34E01F38214500E197D4 /* PenaltiesTableViewController.swift in Sources */,
 				DB48140B1F35521600ADFDE9 /* Reachability.swift in Sources */,
 				DB27C37F1F3546B400ACED5A /* AppDelegate.swift in Sources */,
 				DB48140D1F3554CB00ADFDE9 /* FirebaseClient.swift in Sources */,
