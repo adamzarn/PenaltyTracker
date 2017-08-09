@@ -65,6 +65,7 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     
     var currentTextField: UITextField?
     
+    var navBarHeight: CGFloat!
     let screenWidth = UIScreen.main.bounds.width
     let screenHeight = UIScreen.main.bounds.height
     
@@ -75,7 +76,15 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         
         calendarView.visibleDates { (visibleDates) in
             self.setUpHeader(from: visibleDates)
+            if let event = self.event {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "M/d/yy"
+                let date = formatter.date(from: event.date)
+                self.calendarView.scrollToDate(date!)
+            }
         }
+        
+        navBarHeight = (self.navigationController?.navigationBar.frame.size.height)! + UIApplication.shared.statusBarFrame.size.height
         
         pin1.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
         pin2.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
@@ -127,10 +136,6 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
             stateTextField.text = event.state
             startTimeTextField.text = event.startTime
             endTimeTextField.text = event.endTime
-            let formatter = DateFormatter()
-            formatter.dateFormat = "M/d/yy"
-            let date = formatter.date(from: event.date)
-            calendarView.selectDates([date!])
             let pinDigits = GlobalFunctions.shared.parse(pin: event.pin)
             pin1.text = pinDigits[0]
             pin2.text = pinDigits[1]
@@ -139,6 +144,14 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
             submitButton.setTitle("SUBMIT CHANGES", for: .normal)
         }
         
+    }
+    
+    func selectDate(of event: Event) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M/d/yy"
+        let date = formatter.date(from: event.date)
+        self.calendarView.selectDates([date!])
+        self.calendarView.reloadData()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -158,6 +171,8 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     }
     
     @IBAction func submitButtonPressed(_ sender: Any) {
+        
+        currentTextField?.resignFirstResponder()
         
         if nameTextField.text! == "" {
             displayAlert(title: "No Name", message: "You must give this event a name.")
@@ -221,7 +236,7 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         
         let event = Event(uid: existingEventUid, name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, startTime: startTime, endTime: endTime, admin: admin!, adminName: adminName!)
         
-        let message = "Does everything look correct? \n\n Event: \(name) \n Location: \(city), \(state) \n Start Time: \(startTime) \n End Time: \(endTime) \n PIN: \(pin) \n Created by: \(adminName!)"
+        let message = "Does everything look correct? \n\n Event: \(name) \n Location: \(city), \(state) \n Start Time: \(startTime) \n End Time: \(endTime) \n Date: \(date) \n PIN: \(pin) \n Created by: \(adminName!)"
         
         let confirmEventDetails = UIAlertController(title: "Confirm Event Details", message: message, preferredStyle: .alert)
         
@@ -286,12 +301,12 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     
     func keyboardWillShow(notification: Notification) {
         if pin1.isFirstResponder || pin2.isFirstResponder || pin3.isFirstResponder || pin4.isFirstResponder {
-            view.frame.origin.y = -1*getKeyboardHeight(notification: notification)
+            view.frame.origin.y = (-1*getKeyboardHeight(notification: notification)) + navBarHeight
         }
     }
     
     func keyboardWillHide(notification: Notification) {
-        view.frame.origin.y = 0
+        view.frame.origin.y = navBarHeight
     }
     
     func getKeyboardHeight(notification: Notification) -> CGFloat {
@@ -394,16 +409,12 @@ extension CreateEventViewController: JTAppleCalendarViewDelegate, JTAppleCalenda
     func calendar(_ calendar: JTAppleCalendarView, cellForItemAt date: Date, cellState: CellState, indexPath: IndexPath) -> JTAppleCell {
         let cell = calendar.dequeueReusableJTAppleCell(withReuseIdentifier: "CalendarCell", for: indexPath) as! CalendarCell
         
-        if cellState.dateBelongsTo == .thisMonth {
-            cell.dateLabel.text = cellState.text
-            cell.isUserInteractionEnabled = true
-        } else {
-            cell.dateLabel.text = ""
-            cell.isUserInteractionEnabled = false
-        }
-        
         let calendarDate = formatDate(date: date)
         let currentDate = formatDate(date: Date())
+        
+        if (calendarView.visibleDates().monthDates.first?.date)! > calendarDate || (calendarView.visibleDates().monthDates.last?.date)! < calendarDate {
+            cell.isUserInteractionEnabled = false
+        }
         
         if calendarDate < currentDate {
             cell.dateLabel.textColor = .lightGray
@@ -413,11 +424,21 @@ extension CreateEventViewController: JTAppleCalendarViewDelegate, JTAppleCalenda
             cell.isUserInteractionEnabled = true
         }
         
+        if cellState.dateBelongsTo == .thisMonth {
+            cell.dateLabel.text = cellState.text
+            cell.isUserInteractionEnabled = true
+        } else {
+            cell.dateLabel.text = ""
+            cell.isUserInteractionEnabled = false
+        }
+        
         if cellState.isSelected && cellState.dateBelongsTo == .thisMonth {
+            print(date)
             cell.selectedView.isHidden = false
         } else {
             cell.selectedView.isHidden = true
         }
+        
         return cell
     }
     
@@ -448,6 +469,9 @@ extension CreateEventViewController: JTAppleCalendarViewDelegate, JTAppleCalenda
     
     func calendar(_ calendar: JTAppleCalendarView, didScrollToDateSegmentWith visibleDates: DateSegmentInfo) {
         setUpHeader(from: visibleDates)
+        if let event = self.event {
+            selectDate(of: event)
+        }
     }
     
     

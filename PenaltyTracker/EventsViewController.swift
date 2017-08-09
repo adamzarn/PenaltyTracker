@@ -294,6 +294,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
         if enteredPin == correctPin! {
             accessEvent(row: eventRow!)
         } else {
+            pin1.becomeFirstResponder()
             displayAlert(title: "Incorrect PIN", message: "Contact this event's administrator for the PIN.")
         }
     }
