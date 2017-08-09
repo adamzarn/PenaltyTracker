@@ -63,21 +63,25 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         aiv.isHidden = false
         aiv.startAnimating()
         penaltiesTableView.isHidden = true
-        FirebaseClient.shared.getPenalties(eventID: eventID) { (penalties, error) -> () in
-            self.aiv.isHidden = true
-            self.aiv.stopAnimating()
-            if error == "No Penalties Yet" {
-                self.penaltiesTableView.isHidden = false
-                self.penaltiesTableView.reloadData()
-                return
+        if GlobalFunctions.shared.hasConnectivity() {
+            FirebaseClient.shared.getPenalties(eventID: eventID) { (penalties, error) -> () in
+                self.aiv.isHidden = true
+                self.aiv.stopAnimating()
+                if error == "No Penalties Yet" {
+                    self.penaltiesTableView.isHidden = false
+                    self.penaltiesTableView.reloadData()
+                    return
+                }
+                if let penalties = penalties {
+                    self.penalties = penalties
+                    self.filterThenSortPenalties()
+                    self.penaltiesTableView.isHidden = false
+                } else {
+                    self.displayAlert(title: "Error", message: "Could not load penalties. Please try again.")
+                }
             }
-            if let penalties = penalties {
-                self.penalties = penalties
-                self.filterThenSortPenalties()
-                self.penaltiesTableView.isHidden = false
-            } else {
-                self.displayAlert(title: "Error", message: "Could not load penalties. Please try again.")
-            }
+        } else {
+            self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
         }
     }
     
@@ -229,7 +233,10 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
         
         let closeAction = UIAlertAction(title: "Close", style: .cancel) { (_) in }
         let editAction = UIAlertAction(title: "Edit", style: .default) { (_) in
-            
+            let logPenaltyVC = self.storyboard?.instantiateViewController(withIdentifier: "LogPenaltyViewController") as! LogPenaltyViewController
+            logPenaltyVC.eventID = self.event?.uid
+            logPenaltyVC.penalty = penalty
+            self.navigationController?.pushViewController(logPenaltyVC, animated: true)
         }
         
         penaltyDetails.addAction(editAction)
@@ -241,6 +248,40 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 80.0
+    }
+    
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            var penalty = penalties[indexPath.row]
+            if searchController.isActive {
+                penalty = filteredPenalties[indexPath.row]
+            }
+            let alert = UIAlertController(title: "Delete Penalty", message: "This can't be undone. Are you sure you want to continue?", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "No", style: .default, handler: nil))
+            alert.addAction(UIAlertAction(title: "Yes", style: .default) { (_) in
+                if GlobalFunctions.shared.hasConnectivity() {
+                    FirebaseClient.shared.deletePenalty(eventID: (self.event?.uid)!, penaltyID: penalty.uid) { (success) -> () in
+                        if let success = success {
+                            if success {
+                                self.displayAlert(title: "Success", message: "The penalty was successfully deleted.")
+                                self.getPenalties(eventID: (self.event?.uid)!)
+                            } else {
+                                self.displayAlert(title: "Error", message: "The penalty couldn't be deleted.")
+                            }
+                        } else {
+                            self.displayAlert(title: "Error", message: "The penalty couldn't be deleted.")
+                        }
+                    }
+                } else {
+                    self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
+                }
+            })
+            self.present(alert, animated: false, completion: nil)
+        }
     }
     
 }

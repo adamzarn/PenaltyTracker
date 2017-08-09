@@ -64,10 +64,14 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
             if let user = user {
                 self.defaults.set(self.emailTextField.text! as String, forKey: "lastEmail")
                 self.defaults.set(self.passwordTextField.text! as String, forKey: "lastPassword")
-                FirebaseClient.shared.getUserData(uid: user.uid) { (user, error) in
-                    self.appDelegate.currentUser = user
-                    let eventsNC = self.storyboard?.instantiateViewController(withIdentifier: "EventsNavigationController") as! MyNavigationController
-                    self.present(eventsNC, animated: false, completion: nil)
+                if GlobalFunctions.shared.hasConnectivity() {
+                    FirebaseClient.shared.getUserData(uid: user.uid) { (user, error) in
+                        self.appDelegate.currentUser = user
+                        let eventsNC = self.storyboard?.instantiateViewController(withIdentifier: "EventsNavigationController") as! MyNavigationController
+                        self.present(eventsNC, animated: false, completion: nil)
+                    }
+                } else {
+                    self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
                 }
             } else {
                 self.displayAlert(title: "Error", message: (error?.localizedDescription)!)

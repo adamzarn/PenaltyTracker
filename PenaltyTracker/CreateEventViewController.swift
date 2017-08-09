@@ -226,26 +226,36 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         let confirmEventDetails = UIAlertController(title: "Confirm Event Details", message: message, preferredStyle: .alert)
         
         let submitAction = UIAlertAction(title: "Submit", style: .default) { (_) in
-            FirebaseClient.shared.createEvent(uid: existingEventUid, event: event) { (success, message) -> () in
-                if let success = success, let message = message {
-                    if success {
-                        let alert = UIAlertController(title: "Success!", message: message as String, preferredStyle: .alert)
-                        alert.addAction(UIAlertAction(title: "OK", style: .default) { (_) in
-                            if existingEventUid == "" {
-                                self.navigationController?.popToRootViewController(animated: true)
-                            } else {
-                                let penaltiesTableVC = self.navigationController?.viewControllers[1] as! PenaltiesTableViewController
-                                penaltiesTableVC.event = event
-                            }
-                        })
-                        self.present(alert, animated: false, completion: nil)
+            
+            if GlobalFunctions.shared.hasConnectivity() {
+            
+                FirebaseClient.shared.createEvent(uid: existingEventUid, event: event) { (success, message) -> () in
+                    if let success = success, let message = message {
+                        if success {
+                            let alert = UIAlertController(title: "Success!", message: message as String, preferredStyle: .alert)
+                            alert.addAction(UIAlertAction(title: "OK", style: .default) { (_) in
+                                if existingEventUid == "" {
+                                    self.navigationController?.popToRootViewController(animated: true)
+                                } else {
+                                    let penaltiesTableVC = self.navigationController?.viewControllers[1] as! PenaltiesTableViewController
+                                    penaltiesTableVC.event = event
+                                }
+                            })
+                            self.present(alert, animated: false, completion: nil)
+                        } else {
+                            self.displayAlert(title: "Error", message: "We were unable to complete your request. Please try again.")
+                        }
                     } else {
                         self.displayAlert(title: "Error", message: "We were unable to complete your request. Please try again.")
                     }
-                } else {
-                    self.displayAlert(title: "Error", message: "We were unable to complete your request. Please try again.")
                 }
+                
+            } else {
+                    
+                self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
+                    
             }
+                
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (_) in }

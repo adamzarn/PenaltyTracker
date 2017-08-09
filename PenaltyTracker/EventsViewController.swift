@@ -111,17 +111,21 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
             let alert = UIAlertController(title: "Delete Event", message: "This can't be undone. Are you sure you want to continue?", preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "No", style: .default, handler: nil))
             alert.addAction(UIAlertAction(title: "Yes", style: .default) { (_) in
-                FirebaseClient.shared.deleteEvent(eventID: event.uid) { (success) -> () in
-                    if let success = success {
-                        if success {
-                            self.displayAlert(title: "Success", message: "The event was successfully deleted.")
-                            self.loadEvents()
+                if GlobalFunctions.shared.hasConnectivity() {
+                    FirebaseClient.shared.deleteEvent(eventID: event.uid) { (success) -> () in
+                        if let success = success {
+                            if success {
+                                self.displayAlert(title: "Success", message: "The event was successfully deleted.")
+                                self.loadEvents()
+                            } else {
+                                self.displayAlert(title: "Error", message: "The event couldn't be deleted.")
+                            }
                         } else {
                             self.displayAlert(title: "Error", message: "The event couldn't be deleted.")
                         }
-                    } else {
-                        self.displayAlert(title: "Error", message: "The event couldn't be deleted.")
                     }
+                } else {
+                    self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
                 }
             })
             self.present(alert, animated: false, completion: nil)
@@ -139,7 +143,6 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     func loadEvents() {
         
         if GlobalFunctions.shared.hasConnectivity() {
-            
             FirebaseClient.shared.getEvents() { (events, error) -> () in
                 if let events = events {
                     self.events = events
@@ -150,7 +153,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
                 self.myTableView.isHidden = false
             }
         } else {
-            self.displayAlert(title: "No Internet Connectivity", message: "Establish an internet connection and try again.")
+            self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
         }
     }
     

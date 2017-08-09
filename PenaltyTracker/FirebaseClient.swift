@@ -162,13 +162,22 @@ class FirebaseClient: NSObject {
         }
     }
     
-    func postPenalty(eventID: String, penalty: Penalty, completion: @escaping (_ success: Bool?) -> ()) {
-        let penaltyRef = self.ref.child("Penalties").child(eventID).childByAutoId()
+    func postPenalty(eventID: String, penaltyID: String, penalty: Penalty, completion: @escaping (_ success: Bool?, _ message: NSString?) -> ()) {
+        var penaltyRef: DatabaseReference!
+        if penaltyID == "" {
+            penaltyRef = self.ref.child("Penalties").child(eventID).childByAutoId()
+        } else {
+            penaltyRef = self.ref.child("Penalties").child(eventID).child(penaltyID)
+        }
         penaltyRef.setValue(penalty.toAnyObject()) { (error, ref) -> Void in
             if error != nil {
-                completion(false)
+                completion(false, "Error")
             } else {
-                completion(true)
+                if penaltyID == "" {
+                    completion(true, "The penalty was successfully logged. We'll take you back to the Penalties list now.")
+                } else {
+                    completion(true, "The penalty was successfully edited.")
+                }
             }
         }
     }
@@ -209,6 +218,17 @@ class FirebaseClient: NSObject {
                         completion(true)
                     }
                 }
+            }
+        }
+    }
+    
+    func deletePenalty(eventID: String, penaltyID: String, completion: @escaping (_ success: Bool?) -> ()) {
+        let penaltyToDeleteRef = self.ref.child("Penalties").child(eventID).child(penaltyID)
+        penaltyToDeleteRef.removeValue() { (error, ref) -> Void in
+            if error != nil {
+                completion(false)
+            } else {
+                completion(true)
             }
         }
     }

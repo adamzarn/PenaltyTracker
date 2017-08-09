@@ -13,6 +13,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
     var eventID: String?
+    var penalty: Penalty?
     
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     
@@ -88,21 +89,54 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         aiv.isHidden = false
         aiv.startAnimating()
         
-        FirebaseClient.shared.getDescriptors() { (bikes, colors, penaltyTypes, error) -> () in
-            self.aiv.isHidden = true
-            self.aiv.stopAnimating()
-            self.stackView.isHidden = false
-            if let bikes = bikes, let colors = colors, let penaltyTypes = penaltyTypes {
-                self.bikes = bikes
-                self.colors = colors
-                self.penaltyTypes = penaltyTypes
-                self.setUpTextFields()
-            } else {
-                print("error")
+        if GlobalFunctions.shared.hasConnectivity() {
+            FirebaseClient.shared.getDescriptors() { (bikes, colors, penaltyTypes, error) -> () in
+                self.aiv.isHidden = true
+                self.aiv.stopAnimating()
+                self.stackView.isHidden = false
+                if let bikes = bikes, let colors = colors, let penaltyTypes = penaltyTypes {
+                    self.bikes = bikes
+                    self.colors = colors
+                    self.penaltyTypes = penaltyTypes
+                    self.setUpTextFields()
+                } else {
+                    print("error")
+                }
             }
+        } else {
+            self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
         }
         
         submitButton.setTitleColor(appDelegate.darkBlueColor, for: .normal)
+        
+        if let penalty = penalty {
+            bibNumberTextField.text = penalty.bibNumber
+            if penalty.gender == "M" {
+                genderSegmentedControl.selectedSegmentIndex = 0
+            } else {
+                genderSegmentedControl.selectedSegmentIndex = 1
+            }
+            bikeTypeTextField.text = penalty.bikeType
+            bikeColorTextField.text = penalty.bikeColor
+            helmetColorTextField.text = penalty.helmetColor
+            topColorTextField.text = penalty.topColor
+            pantColorTextField.text = penalty.pantColor
+            penaltyTextField.text = penalty.penalty
+            bikeLengthsTextField.text = penalty.bikeLengths
+            secondsTextField.text = penalty.seconds
+            approximateMileTextField.text = penalty.approximateMile
+            notesTextView.text = penalty.notes
+            if ["Blatant Littering", "Drafting"].contains(penalty.penalty) {
+                cardView.backgroundColor = appDelegate.darkBlueColor
+                cardLabel.text = "Blue Card"
+                cardLabel.textColor = .white
+            } else {
+                cardView.backgroundColor = appDelegate.yellowColor
+                cardLabel.text = "Yellow Card"
+                cardLabel.textColor = .black
+            }
+            submitButton.setTitle("SUBMIT CHANGES", for: .normal)
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -329,8 +363,12 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         let approximateMile = approximateMileTextField.text!
         let submittedBy = appDelegate.currentUser?.name
         let notes = notesTextView.text!
+        var existingPenaltyUid = ""
+        if let existingPenalty = self.penalty {
+            existingPenaltyUid = existingPenalty.uid
+        }
         
-        var newPenalty = Penalty(uid: "", bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy!, timeStamp: "", checkedIn: false)
+        var newPenalty = Penalty(uid: existingPenaltyUid, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy!, timeStamp: "", checkedIn: false)
         
         var penaltyMessage = ""
         if penalty == "Drafting" {
@@ -344,22 +382,31 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         let confirmPenaltyDetails = UIAlertController(title: "Confirm Penalty Details", message: message, preferredStyle: .alert)
         
         let submitAction = UIAlertAction(title: "Submit", style: .default) { (_) in
-            
-            newPenalty.timeStamp = self.getCurrentDateAndTime()
-            FirebaseClient.shared.postPenalty(eventID: (self.eventID)!, penalty: newPenalty) { (success) -> () in
-                if let success = success {
-                    if success {
-                        let alert = UIAlertController(title: "Success!", message: "The penalty was successfully logged. We'll take you back to the Penalties list now.", preferredStyle: .alert)
-                        alert.addAction(UIAlertAction(title: "OK", style: .default) { (_) in
-                            self.navigationController?.popViewController(animated: true)
-                        })
-                        self.present(alert, animated: false, completion: nil)
+            if existingPenaltyUid == "" {
+                newPenalty.timeStamp = self.getCurrentDateAndTime()
+            } else {
+                newPenalty.timeStamp = (self.penalty?.timeStamp)!
+            }
+            if GlobalFunctions.shared.hasConnectivity() {
+                FirebaseClient.shared.postPenalty(eventID: (self.eventID)!, penaltyID: existingPenaltyUid, penalty: newPenalty) { (success, message) -> () in
+                    if let success = success, let message = message {
+                        if success {
+                            let alert = UIAlertController(title: "Success!", message: message as String, preferredStyle: .alert)
+                            alert.addAction(UIAlertAction(title: "OK", style: .default) { (_) in
+                                if existingPenaltyUid == "" {
+                                    self.navigationController?.popViewController(animated: true)
+                                }
+                            })
+                            self.present(alert, animated: false, completion: nil)
+                        } else {
+                            self.displayAlert(title: "Error", message: "We were unable to complete your request. Please try again.")
+                        }
                     } else {
-                        self.displayAlert(title: "Error", message: "We were unable to log the penalty. Please try again.")
+                        self.displayAlert(title: "Error", message: "We were unable to complete your request. Please try again.")
                     }
-                } else {
-                    self.displayAlert(title: "Error", message: "We were unable to log the penalty. Please try again.")
                 }
+            } else {
+                self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
             }
         }
         
