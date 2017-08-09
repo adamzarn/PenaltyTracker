@@ -16,11 +16,28 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     var events: [Event] = []
     var filteredEvents: [Event] = []
 
+    @IBOutlet weak var enterPinView: UIView!
+    var dimView: UIView?
+    @IBOutlet weak var pin1: UITextField!
+    @IBOutlet weak var pin2: UITextField!
+    @IBOutlet weak var pin3: UITextField!
+    @IBOutlet weak var pin4: UITextField!
+    @IBOutlet weak var submitPinButton: UIButton!
+    @IBOutlet weak var cancelPinButton: UIButton!
+    
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     @IBOutlet weak var loadingLabel: UILabel!
     
     @IBOutlet weak var myTableView: UITableView!
     let searchController = UISearchController(searchResultsController: nil)
+    
+    var currentTextField: UITextField?
+    
+    let screenWidth = UIScreen.main.bounds.width
+    let screenHeight = UIScreen.main.bounds.height
+    
+    var correctPin: String?
+    var eventRow: Int?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -36,12 +53,37 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
         searchController.definesPresentationContext = false
         searchController.hidesNavigationBarDuringPresentation = false
         myTableView.tableHeaderView = searchController.searchBar
-    
         
+        dimView = UIView(frame:UIScreen.main.bounds)
+        dimView?.backgroundColor = UIColor(white: 0.4, alpha: 0.5)
+        
+        enterPinView.layer.cornerRadius = 5
+        submitPinButton.setTitleColor(appDelegate.darkBlueColor, for: .normal)
+        cancelPinButton.setTitleColor(appDelegate.darkBlueColor, for: .normal)
+        
+        let toolBar = UIToolbar(frame: CGRect(x: 0, y: 0, width: screenWidth, height: 44))
+        toolBar.barStyle = .default
+        let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil)
+        let done = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(dismissKeyboard))
+        toolBar.items = [flex, done]
+        
+        pin1.inputAccessoryView = toolBar
+        pin2.inputAccessoryView = toolBar
+        pin3.inputAccessoryView = toolBar
+        pin4.inputAccessoryView = toolBar
+        
+        pin1.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        pin2.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        pin3.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+    
     }
     
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        return true
+    override func viewWillAppear(_ animated: Bool) {
+        enterPinView.isHidden = true
+        myTableView.isHidden = true
+        loadingLabel.isHidden = false
+        aiv.isHidden = false
+        aiv.startAnimating()
     }
     
     func loadEvents() {
@@ -73,35 +115,53 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(false)
-        myTableView.isHidden = true
-        aiv.isHidden = false
-        aiv.startAnimating()
         
         loadEvents()
         
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if searchController.isActive {
+            return filteredEvents.count
+        }
         return events.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "eventCell") as! EventCell
-        cell.setUpCell(event: events[indexPath.row])
+        if searchController.isActive {
+            cell.setUpCell(event: filteredEvents[indexPath.row])
+        } else {
+            cell.setUpCell(event: events[indexPath.row])
+        }
         return cell
         
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        correctPin = events[indexPath.row].pin
+        eventRow = indexPath.row
+        pin1.becomeFirstResponder()
         tableView.deselectRow(at: indexPath, animated: false)
+        self.view.addSubview(dimView!)
+        self.view.bringSubview(toFront: dimView!)
+        enterPinView.isHidden = false
+        self.view.bringSubview(toFront: enterPinView)
+    }
+    
+    func accessEvent(row: Int) {
+        prepareForTransition()
         let penaltiesVC = storyboard?.instantiateViewController(withIdentifier: "PenaltiesTableViewController") as! PenaltiesTableViewController
-        penaltiesVC.event = events[indexPath.row]
+        penaltiesVC.event = events[row]
         self.navigationController?.pushViewController(penaltiesVC, animated: true)
     }
     
     func filterContentForSearchText(searchText: String, scope: String = "All") {
-        
+        filteredEvents = events.filter { event in
+            return (event.name.contains(searchText) || event.city.contains(searchText))
+        }
+        myTableView.reloadData()
     }
 
     @IBAction func logoutButtonPressed(_ sender: Any) {
@@ -109,12 +169,90 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     @IBAction func createEventButtonPressed(_ sender: Any) {
-        
+        prepareForTransition()
         let createEventVC = storyboard?.instantiateViewController(withIdentifier: "CreateEventViewController") as! CreateEventViewController
         self.navigationController?.pushViewController(createEventVC, animated: true)
         
     }
     
+    func prepareForTransition() {
+        dismissEnterPinView()
+        myTableView.isHidden = true
+        aiv.isHidden = true
+        loadingLabel.isHidden = true
+        if searchController.isActive {
+            searchController.searchBar.text = ""
+            searchController.isActive = false
+            searchController.dismiss(animated: false, completion: nil)
+        }
+    }
+    
+    func dismissKeyboard() {
+        currentTextField?.resignFirstResponder()
+    }
+    
+    //Text Field Delegate Methods
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        if [pin1, pin2, pin3, pin4].contains(textField) {
+            textField.text = ""
+        }
+        currentTextField = textField
+        textField.becomeFirstResponder()
+    }
+    
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool  {
+        
+        if [pin1, pin2, pin3, pin4].contains(textField) {
+            let currentCharacterCount = textField.text?.characters.count ?? 0
+            if (range.length + range.location > currentCharacterCount){
+                return false
+            }
+            let newLength = currentCharacterCount + string.characters.count - range.length
+            return newLength <= 1
+        }
+        
+        return true
+    }
+    
+    func textFieldDidChange(_ textField: UITextField) {
+        if textField == pin1 {
+            pin2.becomeFirstResponder()
+        } else if textField == pin2 {
+            pin3.becomeFirstResponder()
+        } else if textField == pin3 {
+            pin4.becomeFirstResponder()
+        }
+    }
+    
+
+    @IBAction func submitPinButtonPressed(_ sender: Any) {
+        let enteredPin = "\(pin1.text!)\(pin2.text!)\(pin3.text!)\(pin4.text!)"
+        pin1.text = ""
+        pin2.text = ""
+        pin3.text = ""
+        pin4.text = ""
+        if enteredPin == correctPin! {
+            accessEvent(row: eventRow!)
+        } else {
+            displayAlert(title: "Incorrect PIN", message: "Contact this event's administrator for the PIN.")
+        }
+    }
+    
+    @IBAction func cancelPinButtonPressed(_ sender: Any) {
+        dismissEnterPinView()
+    }
+    
+    func dismissEnterPinView() {
+        currentTextField?.resignFirstResponder()
+        enterPinView.isHidden = true
+        dimView?.removeFromSuperview()
+    }
     
 }
 

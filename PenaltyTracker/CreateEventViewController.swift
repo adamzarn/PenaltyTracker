@@ -247,12 +247,12 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     
     func keyboardWillShow(notification: Notification) {
         if pin1.isFirstResponder || pin2.isFirstResponder || pin3.isFirstResponder || pin4.isFirstResponder {
-            view.frame.origin.y = (-1*getKeyboardHeight(notification: notification)) + (self.navigationController?.navigationBar.frame.size.height)! + UIApplication.shared.statusBarFrame.size.height
+            view.frame.origin.y = -1*getKeyboardHeight(notification: notification)
         }
     }
     
     func keyboardWillHide(notification: Notification) {
-        view.frame.origin.y = (self.navigationController?.navigationBar.frame.size.height)! + UIApplication.shared.statusBarFrame.size.height
+        view.frame.origin.y = 0
     }
     
     func getKeyboardHeight(notification: Notification) -> CGFloat {

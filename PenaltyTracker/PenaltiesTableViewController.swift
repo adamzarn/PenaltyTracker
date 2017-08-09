@@ -8,10 +8,11 @@
 
 import UIKit
 
-class PenaltiesTableViewController: UIViewController {
+class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISearchControllerDelegate {
     
     var event: Event?
     var penalties: [Penalty] = []
+    var filteredPenalties: [Penalty] = []
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
     
     @IBOutlet weak var penaltiesTableView: UITableView!
@@ -20,12 +21,26 @@ class PenaltiesTableViewController: UIViewController {
     @IBOutlet weak var sortSegmentedControl: UISegmentedControl!
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     
+    let searchController = UISearchController(searchResultsController: nil)
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         if let event = event {
             navItem.title = event.name
         }
+        
+        penaltiesTableView.setContentOffset(CGPoint(x:0,y:searchController.searchBar.frame.size.height), animated: false)
+        
+        searchController.delegate = self
+        searchController.searchBar.delegate = self
+        searchController.searchResultsUpdater = self
+        searchController.dimsBackgroundDuringPresentation = false
+        searchController.definesPresentationContext = false
+        searchController.hidesNavigationBarDuringPresentation = false
+        searchController.searchBar.placeholder = "Search by Bib Number..."
+        searchController.searchBar.keyboardType = .numberPad
+        penaltiesTableView.tableHeaderView = searchController.searchBar
         
         penaltiesSegmentedControl.tintColor = appDelegate.darkBlueColor
         sortSegmentedControl.tintColor = appDelegate.darkBlueColor
@@ -76,14 +91,17 @@ class PenaltiesTableViewController: UIViewController {
             }
         }
         
+        sortPenalties()
+        penaltiesTableView.reloadData()
+        
+    }
+    
+    func sortPenalties() {
         if sortSegmentedControl.selectedSegmentIndex == 0 {
             penalties.sort { $0.timeStamp < $1.timeStamp }
         } else {
             penalties.sort { Int($0.bibNumber)! < Int($1.bibNumber)! }
         }
-
-        penaltiesTableView.reloadData()
-        
     }
     
     @IBAction func filterCriteronChanged(_ sender: Any) {
@@ -91,7 +109,8 @@ class PenaltiesTableViewController: UIViewController {
     }
     
     @IBAction func sortCriterionChanged(_ sender: Any) {
-        getPenalties(eventID: (event?.uid)!)
+        sortPenalties()
+        penaltiesTableView.reloadData()
     }
     
     @IBAction func logPenaltyButtonPressed(_ sender: Any) {
@@ -121,12 +140,19 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if searchController.isActive {
+            return filteredPenalties.count
+        }
         return penalties.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "penaltyCell") as! PenaltyCell
-        cell.setUpCell(penalty: penalties[indexPath.row], vc: self, eventID: (event?.uid)!)
+        if searchController.isActive {
+            cell.setUpCell(penalty: filteredPenalties[indexPath.row], vc: self, eventID: (event?.uid)!)
+        } else {
+            cell.setUpCell(penalty: penalties[indexPath.row], vc: self, eventID: (event?.uid)!)
+        }
         return cell
     }
     
@@ -134,5 +160,45 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
         return 80.0
     }
     
+    func confirmCheckIn(bibNumber: String) {
+        let alert = UIAlertController(title: "Check in Bib Number \(bibNumber)?", message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .default, handler: nil))
+        alert.addAction(UIAlertAction(title: "Yes", style: .default) { (_) in
+            self.getPenalties(eventID: (self.event?.uid)!)
+        })
+        self.present(alert, animated: false, completion: nil)
+    }
     
+    func confirmUnCheckIn(bibNumber: String) {
+        let alert = UIAlertController(title: "Undo check in for Bib Number \(bibNumber)?", message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .default, handler: nil))
+        alert.addAction(UIAlertAction(title: "Yes", style: .default) { (_) in
+            self.getPenalties(eventID: (self.event?.uid)!)
+        })
+        self.present(alert, animated: false, completion: nil)
+    }
+    
+    func filterContentForSearchText(searchText: String, scope: String = "All") {
+        filteredPenalties = penalties.filter { penalty in
+            return penalty.bibNumber.contains(searchText)
+        }
+        penaltiesTableView.reloadData()
+    }
+    
+    func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+        penaltiesSegmentedControl.isEnabled = false
+        sortSegmentedControl.isEnabled = false
+    }
+    
+    func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
+        penaltiesSegmentedControl.isEnabled = true
+        sortSegmentedControl.isEnabled = true
+    }
+    
+}
+
+extension PenaltiesTableViewController: UISearchResultsUpdating {
+    func updateSearchResults(for: UISearchController) {
+        filterContentForSearchText(searchText: searchController.searchBar.text!)
+    }
 }

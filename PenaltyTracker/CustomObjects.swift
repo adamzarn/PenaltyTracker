@@ -234,12 +234,17 @@ class PenaltyCell: UITableViewCell {
     }
     
     @IBAction func checkedInButtonPressed(_ sender: Any) {
+        if (self.delegate?.searchController.isActive)! {
+            self.delegate?.searchController.isActive = false
+            self.delegate?.searchController.searchBar.text = ""
+            self.delegate?.searchController.dismiss(animated: false, completion: nil)
+        }
         if let penalty = self.penalty {
             if penalty.checkedIn {
                 FirebaseClient.shared.unCheckIn(eventID: self.eventID!, penaltyID: penalty.uid) { (success) -> () in
                     if let success = success {
                         if success {
-                            self.delegate?.getPenalties(eventID: self.eventID!)
+                            self.delegate?.confirmUnCheckIn(bibNumber: penalty.bibNumber)
                         }
                     }
                 }
@@ -247,7 +252,7 @@ class PenaltyCell: UITableViewCell {
                 FirebaseClient.shared.checkIn(eventID: self.eventID!, penaltyID: penalty.uid){ (success) -> () in
                     if let success = success {
                         if success {
-                            self.delegate?.getPenalties(eventID: self.eventID!)
+                            self.delegate?.confirmCheckIn(bibNumber: penalty.bibNumber)
                         }
                     }
                 }

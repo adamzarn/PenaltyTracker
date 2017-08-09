@@ -22,14 +22,20 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Penalty" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Nu4-g7-NEZ">
-                                <rect key="frame" x="114.5" y="234" width="146" height="54"/>
+                                <rect key="frame" x="115" y="200" width="146" height="54"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="45"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Tracker" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="FHe-Ei-FY7">
-                                <rect key="frame" x="114.5" y="297" width="146" height="54"/>
+                                <rect key="frame" x="115" y="263" width="146" height="54"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="45"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="BETA" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1W7-Xb-WAa">
+                                <rect key="frame" x="167" y="333" width="41" height="21"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
@@ -37,7 +43,9 @@
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="FHe-Ei-FY7" firstAttribute="top" secondItem="Nu4-g7-NEZ" secondAttribute="bottom" constant="9" id="DlM-EX-dIH"/>
-                            <constraint firstItem="Nu4-g7-NEZ" firstAttribute="top" secondItem="Llm-lL-Icb" secondAttribute="bottom" constant="214" id="fsC-0c-rnu"/>
+                            <constraint firstItem="1W7-Xb-WAa" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="K9O-RY-MZH"/>
+                            <constraint firstItem="1W7-Xb-WAa" firstAttribute="top" secondItem="FHe-Ei-FY7" secondAttribute="bottom" constant="16" id="Rdo-JR-vKa"/>
+                            <constraint firstItem="Nu4-g7-NEZ" firstAttribute="top" secondItem="Llm-lL-Icb" secondAttribute="bottom" constant="180" id="fsC-0c-rnu"/>
                             <constraint firstItem="Nu4-g7-NEZ" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="t3p-zt-0Vf"/>
                             <constraint firstItem="FHe-Ei-FY7" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="xJd-Rw-f2w"/>
                         </constraints>
