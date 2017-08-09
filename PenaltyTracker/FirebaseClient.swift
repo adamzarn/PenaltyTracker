@@ -142,13 +142,22 @@ class FirebaseClient: NSObject {
         
     }
     
-    func createEvent(event: Event, completion: @escaping (_ success: Bool?) -> ()) {
-        let eventsRef = self.ref.child("Events").childByAutoId()
+    func createEvent(uid: String, event: Event, completion: @escaping (_ success: Bool?, _ message: NSString?) -> ()) {
+        var eventsRef: DatabaseReference
+        if uid == "" {
+            eventsRef = self.ref.child("Events").childByAutoId()
+        } else {
+            eventsRef = self.ref.child("Events").child(uid)
+        }
         eventsRef.setValue(event.toAnyObject()) { (error, ref) -> Void in
             if error != nil {
-                completion(false)
+                completion(false, "error")
             } else {
-                completion(true)
+                if uid == "" {
+                    completion(true, "Your event was successfully created. We'll take you to the Events list now where you can access it.")
+                } else {
+                    completion(true, "Your event was successfully edited.")
+                }
             }
         }
     }
@@ -182,6 +191,24 @@ class FirebaseClient: NSObject {
                 completion(false)
             } else {
                 completion(true)
+            }
+        }
+    }
+    
+    func deleteEvent(eventID: String, completion: @escaping (_ success: Bool?) -> ()) {
+        let eventToDeleteRef = self.ref.child("Events").child(eventID)
+        let penaltiesToDeleteRef = self.ref.child("Penalties").child(eventID)
+        eventToDeleteRef.removeValue() { (error, ref) -> Void in
+            if error != nil {
+                completion(false)
+            } else {
+                penaltiesToDeleteRef.removeValue() { (error, ref) -> Void in
+                    if error != nil {
+                        completion(false)
+                    } else {
+                        completion(true)
+                    }
+                }
             }
         }
     }

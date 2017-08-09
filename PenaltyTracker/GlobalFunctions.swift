@@ -32,9 +32,55 @@ class GlobalFunctions: NSObject {
         return attributedString
     }
     
+    func formattedTimestamp(ts: String) -> String {
+        var hour = Int(ts.substring(with: 9..<11))
+        let minute = ts.substring(with: 12..<14)
+        var suffix = "AM"
+        if hour! > 11 {
+            suffix = "PM"
+        }
+        if hour! > 12 {
+            hour = hour! - 12
+        }
+        if hour! == 0 {
+            hour = 12
+        }
+        return "\(hour!):\(minute) \(suffix)"
+    }
+    
+    func parse(pin: String) -> [String] {
+        let pin1 = pin.substring(with: 0..<1)
+        let pin2 = pin.substring(with: 1..<2)
+        let pin3 = pin.substring(with: 2..<3)
+        let pin4 = pin.substring(with: 3..<4)
+        return [pin1, pin2, pin3, pin4]
+    }
+    
     static let shared = GlobalFunctions()
     private override init() {
         super.init()
     }
     
+}
+
+extension String {
+    func index(from: Int) -> Index {
+        return self.index(startIndex, offsetBy: from)
+    }
+    
+    func substring(from: Int) -> String {
+        let fromIndex = index(from: from)
+        return substring(from: fromIndex)
+    }
+    
+    func substring(to: Int) -> String {
+        let toIndex = index(from: to)
+        return substring(to: toIndex)
+    }
+    
+    func substring(with r: Range<Int>) -> String {
+        let startIndex = index(from: r.lowerBound)
+        let endIndex = index(from: r.upperBound)
+        return substring(with: startIndex..<endIndex)
+    }
 }

@@ -267,11 +267,11 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
                 secondsTextField.isEnabled = false
             }
             if penaltyTypes[row].color == "Blue" {
-                cardView.backgroundColor = .blue
+                cardView.backgroundColor = appDelegate.darkBlueColor
                 cardLabel.text = "Blue Card"
                 cardLabel.textColor = .white
             } else if penaltyTypes[row].color == "Yellow" {
-                cardView.backgroundColor = .yellow
+                cardView.backgroundColor = appDelegate.yellowColor
                 cardLabel.text = "Yellow Card"
                 cardLabel.textColor = .black
             } else {
@@ -334,7 +334,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         
         var penaltyMessage = ""
         if penalty == "Drafting" {
-            penaltyMessage = "\(penalty) (\(bikeLengths) bike lengths for \(seconds) s)"
+            penaltyMessage = "\(penalty) (\(bikeLengths) lengths, \(seconds) s)"
         } else {
             penaltyMessage = penalty
         }

@@ -25,6 +25,8 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     @IBOutlet weak var pin4: UITextField!
     @IBOutlet weak var submitButton: UIButton!
     
+    var event: Event?
+    
     var statePicker: UIPickerView!
     let stateOptions = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
                         "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT",
@@ -118,6 +120,25 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         
         submitButton.setTitleColor(appDelegate.darkBlueColor, for: .normal)
         
+        if let event = self.event {
+            self.navigationItem.title = "Edit Event"
+            nameTextField.text = event.name
+            cityTextField.text = event.city
+            stateTextField.text = event.state
+            startTimeTextField.text = event.startTime
+            endTimeTextField.text = event.endTime
+            let formatter = DateFormatter()
+            formatter.dateFormat = "M/d/yy"
+            let date = formatter.date(from: event.date)
+            calendarView.selectDates([date!])
+            let pinDigits = GlobalFunctions.shared.parse(pin: event.pin)
+            pin1.text = pinDigits[0]
+            pin2.text = pinDigits[1]
+            pin3.text = pinDigits[2]
+            pin4.text = pinDigits[3]
+            submitButton.setTitle("SUBMIT CHANGES", for: .normal)
+        }
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -193,28 +214,36 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         let pin = "\(pin1.text!)\(pin2.text!)\(pin3.text!)\(pin4.text!)"
         let admin = Auth.auth().currentUser?.uid
         let adminName = appDelegate.currentUser?.name
+        var existingEventUid = ""
+        if let existingEvent = self.event {
+            existingEventUid = existingEvent.uid
+        }
         
-        let event = Event(uid: "", name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, startTime: startTime, endTime: endTime, admin: admin!, adminName: adminName!)
+        let event = Event(uid: existingEventUid, name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, startTime: startTime, endTime: endTime, admin: admin!, adminName: adminName!)
         
         let message = "Does everything look correct? \n\n Event: \(name) \n Location: \(city), \(state) \n Start Time: \(startTime) \n End Time: \(endTime) \n PIN: \(pin) \n Created by: \(adminName!)"
         
         let confirmEventDetails = UIAlertController(title: "Confirm Event Details", message: message, preferredStyle: .alert)
         
         let submitAction = UIAlertAction(title: "Submit", style: .default) { (_) in
-
-            FirebaseClient.shared.createEvent(event: event) { (success) -> () in
-                if let success = success {
+            FirebaseClient.shared.createEvent(uid: existingEventUid, event: event) { (success, message) -> () in
+                if let success = success, let message = message {
                     if success {
-                        let alert = UIAlertController(title: "Success!", message: "Your event was successfully created. We'll take you to the Events list now where you can access it.", preferredStyle: .alert)
+                        let alert = UIAlertController(title: "Success!", message: message as String, preferredStyle: .alert)
                         alert.addAction(UIAlertAction(title: "OK", style: .default) { (_) in
-                            self.navigationController?.popToRootViewController(animated: true)
+                            if existingEventUid == "" {
+                                self.navigationController?.popToRootViewController(animated: true)
+                            } else {
+                                let penaltiesTableVC = self.navigationController?.viewControllers[1] as! PenaltiesTableViewController
+                                penaltiesTableVC.event = event
+                            }
                         })
                         self.present(alert, animated: false, completion: nil)
                     } else {
-                        self.displayAlert(title: "Error", message: "We were unable to create your event. Please try again.")
+                        self.displayAlert(title: "Error", message: "We were unable to complete your request. Please try again.")
                     }
                 } else {
-                    self.displayAlert(title: "Error", message: "We were unable to create your event. Please try again.")
+                    self.displayAlert(title: "Error", message: "We were unable to complete your request. Please try again.")
                 }
             }
         }

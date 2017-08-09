@@ -90,10 +90,11 @@ class CreateAccountViewController: UIViewController {
             Auth.auth().createUser(withEmail: email!, password: password!) { (user, error) in
                 if let user = user {
                     FirebaseClient.shared.addNewUser(uid: user.uid, name: self.nameTextField.text!)
+                    let newCurrentUser = User(name: self.nameTextField.text!)
+                    self.appDelegate.currentUser = newCurrentUser
                     let eventsNC = self.storyboard?.instantiateViewController(withIdentifier: "EventsNavigationController") as! MyNavigationController
                     self.present(eventsNC, animated: false, completion: nil)
                 } else {
-                    
                     if email == "" {
                         self.displayAlert(title: "No Email", message: "You must provide an email.")
                     } else {

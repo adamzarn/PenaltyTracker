@@ -14,7 +14,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
     var currentUser: User?
-    
+
+    var yellowColor = UIColor(red: 255.0/255.0, green: 206.0/255.0, blue: 111.0/255.0, alpha: 1.0)
     var darkBlueColor = UIColor(red: 80.0/255.0, green: 99.0/255.0, blue: 130.0/255.0, alpha: 1.0)
     var lightBlueColor = UIColor(red: 154.0/255.0, green: 175.0/255.0, blue: 209.0/255.0, alpha: 1.0)
 

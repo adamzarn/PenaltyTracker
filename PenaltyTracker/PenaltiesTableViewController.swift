@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Firebase
 
 class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISearchControllerDelegate {
     
@@ -25,10 +26,6 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        if let event = event {
-            navItem.title = event.name
-        }
         
         penaltiesTableView.setContentOffset(CGPoint(x:0,y:searchController.searchBar.frame.size.height), animated: false)
         
@@ -51,6 +48,11 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         penaltiesTableView.isHidden = true
         aiv.isHidden = false
         aiv.startAnimating()
+        
+        if let event = event {
+            navItem.title = event.name
+        }
+        
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -126,39 +128,6 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         self.present(alert, animated: false, completion: nil)
     }
-
-}
-
-extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSource {
-    
-    func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
-    }
-    
-    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return "Penalties"
-    }
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if searchController.isActive {
-            return filteredPenalties.count
-        }
-        return penalties.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "penaltyCell") as! PenaltyCell
-        if searchController.isActive {
-            cell.setUpCell(penalty: filteredPenalties[indexPath.row], vc: self, eventID: (event?.uid)!)
-        } else {
-            cell.setUpCell(penalty: penalties[indexPath.row], vc: self, eventID: (event?.uid)!)
-        }
-        return cell
-    }
-    
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 80.0
-    }
     
     func confirmCheckIn(bibNumber: String) {
         let alert = UIAlertController(title: "Check in Bib Number \(bibNumber)?", message: nil, preferredStyle: .alert)
@@ -193,6 +162,85 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
     func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
         penaltiesSegmentedControl.isEnabled = true
         sortSegmentedControl.isEnabled = true
+    }
+    
+    @IBAction func editEventButtonPressed(_ sender: Any) {
+        if event?.admin == Auth.auth().currentUser?.uid {
+            let createEventVC = storyboard?.instantiateViewController(withIdentifier: "CreateEventViewController") as! CreateEventViewController
+            createEventVC.event = event
+            self.navigationController?.pushViewController(createEventVC, animated: true)
+        } else {
+            displayAlert(title: "Access Denied", message: "Only the admin of this event is allowed to edit it.")
+        }
+    }
+    
+}
+
+extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSource {
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
+    }
+    
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        return "Penalties"
+    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if searchController.isActive {
+            return filteredPenalties.count
+        }
+        return penalties.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "penaltyCell") as! PenaltyCell
+        if searchController.isActive {
+            cell.setUpCell(penalty: filteredPenalties[indexPath.row], vc: self, eventID: (event?.uid)!)
+        } else {
+            cell.setUpCell(penalty: penalties[indexPath.row], vc: self, eventID: (event?.uid)!)
+        }
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        var penalty = penalties[indexPath.row]
+        if searchController.isActive {
+            penalty = filteredPenalties[indexPath.row]
+        }
+        
+        var checkedIn = "No"
+        if penalty.checkedIn {
+            checkedIn = "Yes"
+        }
+        
+        var penaltyMessage = ""
+        if penalty.penalty == "Drafting" {
+            penaltyMessage = "\(penalty.penalty) (\(penalty.bikeLengths) lengths, \(penalty.seconds) s)"
+        } else {
+            penaltyMessage = penalty.penalty
+        }
+        
+        let formattedTimeStamp = GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp)
+        
+        let message = "\n Checked in: \(checkedIn) \n Bib Number: \(penalty.bibNumber) \n Gender: \(penalty.gender) \n Bike Type: \(penalty.bikeType) \n Bike Color: \(penalty.bikeColor) \n Helmet Color: \(penalty.helmetColor) \n Top Color: \(penalty.topColor) \n Pant Color: \(penalty.pantColor) \n Penalty: \(penaltyMessage) \n Approximate Mile: \(penalty.approximateMile) \n\n Submitted by \(penalty.submittedBy) at \(formattedTimeStamp)."
+        
+        let penaltyDetails = UIAlertController(title: "Penalty Details", message: message, preferredStyle: .alert)
+        
+        let closeAction = UIAlertAction(title: "Close", style: .cancel) { (_) in }
+        let editAction = UIAlertAction(title: "Edit", style: .default) { (_) in
+            
+        }
+        
+        penaltyDetails.addAction(editAction)
+        penaltyDetails.addAction(closeAction)
+        
+        self.present(penaltyDetails, animated: false, completion: nil)
+        tableView.deselectRow(at: indexPath, animated: false)
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 80.0
     }
     
 }

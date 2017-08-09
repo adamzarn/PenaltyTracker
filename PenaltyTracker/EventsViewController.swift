@@ -28,6 +28,9 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     @IBOutlet weak var loadingLabel: UILabel!
     
+    @IBOutlet weak var welcomeToolbar: UIToolbar!
+    @IBOutlet weak var welcomeButton: UIBarButtonItem!
+    
     @IBOutlet weak var myTableView: UITableView!
     let searchController = UISearchController(searchResultsController: nil)
     
@@ -75,7 +78,54 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
         pin1.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
         pin2.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
         pin3.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        
+        welcomeToolbar.isUserInteractionEnabled = false
+        if let user = appDelegate.currentUser {
+            welcomeButton.title = "Welcome \(user.name)!"
+        } else {
+            welcomeButton.title = "Welcome!"
+        }
+        welcomeButton.tintColor = appDelegate.darkBlueColor
     
+    }
+    
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        if searchController.isActive {
+            if Auth.auth().currentUser?.uid == filteredEvents[indexPath.row].admin {
+                return true
+            }
+        } else {
+            if Auth.auth().currentUser?.uid == events[indexPath.row].admin {
+                return true
+            }
+        }
+        return false
+    }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            var event = events[indexPath.row]
+            if searchController.isActive {
+                event = filteredEvents[indexPath.row]
+            }
+            let alert = UIAlertController(title: "Delete Event", message: "This can't be undone. Are you sure you want to continue?", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "No", style: .default, handler: nil))
+            alert.addAction(UIAlertAction(title: "Yes", style: .default) { (_) in
+                FirebaseClient.shared.deleteEvent(eventID: event.uid) { (success) -> () in
+                    if let success = success {
+                        if success {
+                            self.displayAlert(title: "Success", message: "The event was successfully deleted.")
+                            self.loadEvents()
+                        } else {
+                            self.displayAlert(title: "Error", message: "The event couldn't be deleted.")
+                        }
+                    } else {
+                        self.displayAlert(title: "Error", message: "The event couldn't be deleted.")
+                    }
+                }
+            })
+            self.present(alert, animated: false, completion: nil)
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {

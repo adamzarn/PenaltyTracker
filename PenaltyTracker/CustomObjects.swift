@@ -190,6 +190,7 @@ class PenaltyCell: UITableViewCell {
     @IBOutlet weak var penaltyLabel: UILabel!
     @IBOutlet weak var submittedByLabel: UILabel!
     @IBOutlet weak var timeStampLabel: UILabel!
+    @IBOutlet weak var cardView: UIView!
     
     var penalty: Penalty?
     var delegate: PenaltiesTableViewController?
@@ -214,23 +215,14 @@ class PenaltyCell: UITableViewCell {
         submittedByLabel.text = "Submitted by \(penalty.submittedBy)"
         submittedByLabel.textColor = .lightGray
         
-        timeStampLabel.attributedText = GlobalFunctions.shared.bold(string: formattedTimestamp(ts: penalty.timeStamp), size: 14.0, color: appDelegate.darkBlueColor)
-    }
-    
-    func formattedTimestamp(ts: String) -> String {
-        var hour = Int(ts.substring(with: 9..<11))
-        let minute = ts.substring(with: 12..<14)
-        var suffix = "AM"
-        if hour! > 11 {
-            suffix = "PM"
+        timeStampLabel.attributedText = GlobalFunctions.shared.bold(string: GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp), size: 14.0, color: appDelegate.darkBlueColor)
+        
+        if ["Blatant Littering", "Drafting"].contains(penalty.penalty) {
+            cardView.backgroundColor = appDelegate.darkBlueColor
+        } else {
+            cardView.backgroundColor = appDelegate.yellowColor
         }
-        if hour! > 12 {
-            hour = hour! - 12
-        }
-        if hour! == 0 {
-            hour = 12
-        }
-        return "\(hour!):\(minute) \(suffix)"
+        
     }
     
     @IBAction func checkedInButtonPressed(_ sender: Any) {
@@ -260,26 +252,4 @@ class PenaltyCell: UITableViewCell {
         }
     }
     
-}
-
-extension String {
-    func index(from: Int) -> Index {
-        return self.index(startIndex, offsetBy: from)
-    }
-    
-    func substring(from: Int) -> String {
-        let fromIndex = index(from: from)
-        return substring(from: fromIndex)
-    }
-    
-    func substring(to: Int) -> String {
-        let toIndex = index(from: to)
-        return substring(to: toIndex)
-    }
-    
-    func substring(with r: Range<Int>) -> String {
-        let startIndex = index(from: r.lowerBound)
-        let endIndex = index(from: r.upperBound)
-        return substring(with: startIndex..<endIndex)
-    }
 }
