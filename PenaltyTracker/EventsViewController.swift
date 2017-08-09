@@ -47,6 +47,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
         
         myTableView.setContentOffset(CGPoint(x:0,y:searchController.searchBar.frame.size.height), animated: false)
         
+        self.navigationController?.navigationBar.isTranslucent = false
         self.navigationController?.navigationBar.tintColor = UIColor.white
         
         searchController.delegate = self
