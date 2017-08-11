@@ -8,6 +8,7 @@
 
 import UIKit
 import Firebase
+import MessageUI
 
 class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISearchControllerDelegate {
     
@@ -15,12 +16,17 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
     var penalties: [Penalty] = []
     var filteredPenalties: [Penalty] = []
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
-    
+    let defaults = UserDefaults.standard
+    var checkedInCount = 0
+    var refreshControl: UIRefreshControl!
+
     @IBOutlet weak var penaltiesTableView: UITableView!
     @IBOutlet weak var navItem: UINavigationItem!
     @IBOutlet weak var penaltiesSegmentedControl: UISegmentedControl!
     @IBOutlet weak var sortSegmentedControl: UISegmentedControl!
     @IBOutlet weak var aiv: UIActivityIndicatorView!
+    @IBOutlet weak var toolbar: UIToolbar!
+    @IBOutlet weak var emailCSVButton: UIBarButtonItem!
     
     let searchController = UISearchController(searchResultsController: nil)
     
@@ -28,6 +34,7 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         super.viewDidLoad()
         
         penaltiesTableView.setContentOffset(CGPoint(x:0,y:searchController.searchBar.frame.size.height), animated: false)
+        toolbar.isTranslucent = false
         
         searchController.delegate = self
         searchController.searchBar.delegate = self
@@ -41,7 +48,14 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         
         penaltiesSegmentedControl.tintColor = appDelegate.darkBlueColor
         sortSegmentedControl.tintColor = appDelegate.darkBlueColor
-
+        
+        self.refreshControl = UIRefreshControl()
+        self.refreshControl.addTarget(self, action: #selector(PenaltiesTableViewController.getPenalties), for: .valueChanged)
+        
+        penaltiesTableView.refreshControl = self.refreshControl
+        
+        emailCSVButton.tintColor = appDelegate.darkBlueColor
+    
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -56,26 +70,27 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        getPenalties(eventID: (event?.uid)!)
+        getPenalties()
     }
     
-    func getPenalties(eventID: String) {
-        aiv.isHidden = false
-        aiv.startAnimating()
-        penaltiesTableView.isHidden = true
+    func getPenalties() {
         if GlobalFunctions.shared.hasConnectivity() {
-            FirebaseClient.shared.getPenalties(eventID: eventID) { (penalties, error) -> () in
+            FirebaseClient.shared.getPenalties(eventID: (self.event?.uid)!) { (penalties, checkedInCount, error) -> () in
                 self.aiv.isHidden = true
                 self.aiv.stopAnimating()
                 if error == "No Penalties Yet" {
                     self.penaltiesTableView.isHidden = false
                     self.penaltiesTableView.reloadData()
+                    self.refreshControl.endRefreshing()
                     return
                 }
-                if let penalties = penalties {
+                if let penalties = penalties, let checkedInCount = checkedInCount {
+                    self.checkedInCount = checkedInCount
                     self.penalties = penalties
                     self.filterThenSortPenalties()
                     self.penaltiesTableView.isHidden = false
+                    self.refreshControl.attributedTitle = NSAttributedString(string: "Last Updated: \(self.lastUpdatedTime())")
+                    self.refreshControl.endRefreshing()
                 } else {
                     self.displayAlert(title: "Error", message: "Could not load penalties. Please try again.")
                 }
@@ -102,6 +117,14 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         
     }
     
+    func lastUpdatedTime() -> String {
+        let date = Date()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd HH:mm:ss:SSS"
+        let dateString = dateFormatter.string(from: date)
+        return GlobalFunctions.shared.formattedTimestamp(ts: dateString, includeDate: true)
+    }
+    
     func sortPenalties() {
         if sortSegmentedControl.selectedSegmentIndex == 0 {
             penalties.sort { $0.timeStamp < $1.timeStamp }
@@ -111,7 +134,7 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
     }
     
     @IBAction func filterCriteronChanged(_ sender: Any) {
-        getPenalties(eventID: (event?.uid)!)
+        getPenalties()
     }
     
     @IBAction func sortCriterionChanged(_ sender: Any) {
@@ -137,7 +160,7 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         let alert = UIAlertController(title: "Check in Bib Number \(bibNumber)?", message: nil, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Cancel", style: .default, handler: nil))
         alert.addAction(UIAlertAction(title: "Yes", style: .default) { (_) in
-            self.getPenalties(eventID: (self.event?.uid)!)
+            self.getPenalties()
         })
         self.present(alert, animated: false, completion: nil)
     }
@@ -146,7 +169,7 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         let alert = UIAlertController(title: "Undo check in for Bib Number \(bibNumber)?", message: nil, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Cancel", style: .default, handler: nil))
         alert.addAction(UIAlertAction(title: "Yes", style: .default) { (_) in
-            self.getPenalties(eventID: (self.event?.uid)!)
+            self.getPenalties()
         })
         self.present(alert, animated: false, completion: nil)
     }
@@ -177,6 +200,64 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
             displayAlert(title: "Access Denied", message: "Only the admin of this event is allowed to edit it.")
         }
     }
+
+    @IBAction func emailCSVButtonPressed(_ sender: Any) {
+        if penalties.count > 0 {
+            emailCSV()
+        } else {
+            displayAlert(title: "No Penalties", message: "A CSV cannot be created with 0 penalties.")
+        }
+    }
+    
+    func emailCSV() {
+        if let event = event {
+            let name = event.name
+            let date = formatDate(from: event.date)
+            let segment = penaltiesSegmentedControl.titleForSegment(at: penaltiesSegmentedControl.selectedSegmentIndex)!
+            let fileName = "\(date)_\(name)_\(segment) Penalties.csv"
+            print(fileName)
+            let path = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+            let header = "Checked In,Bib Number,Penalty,Bike Lengths,Seconds,Approximate Mile,Gender,Bike Type,Bike Color,Helmet Color,Top Color,Pant Color,Submitted By,Time Submitted,Notes"
+
+            var dataString = header
+            for p in penalties {
+                var checkedInString = "No"
+                if p.checkedIn {
+                    checkedInString = "Yes"
+                }
+                dataString = "\(dataString)\n\(checkedInString),\(p.bibNumber),\(p.penalty),\(p.bikeLengths),\(p.seconds),\(p.approximateMile),\(p.gender),\(p.bikeType),\(p.bikeColor),\(p.helmetColor),\(p.topColor),\(p.pantColor),\(p.submittedBy),\(p.timeStamp),\(p.notes)"
+            }
+            do {
+                try dataString.write(to: path!, atomically: true, encoding: String.Encoding.utf8)
+            } catch {
+                print("Failed to create file")
+                print("\(error)")
+            }
+            
+            let mailComposerVC = MFMailComposeViewController()
+            mailComposerVC.mailComposeDelegate = self
+            
+            mailComposerVC.setSubject(fileName)
+            mailComposerVC.setToRecipients([(Auth.auth().currentUser?.email)!])
+           
+            do {
+                let data = try Data(contentsOf: path!)
+                mailComposerVC.addAttachmentData(data, mimeType: "text/csv", fileName: fileName)
+                present(mailComposerVC, animated: false, completion: nil)
+            } catch {
+                print(error.localizedDescription)
+            }
+        
+        }
+    }
+    
+    func formatDate(from date: String) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "M/d/yy"
+        let dateDate = dateFormatter.date(from: date)
+        dateFormatter.dateFormat = "yyyyMMdd"
+        return dateFormatter.string(from: dateDate!)
+    }
     
 }
 
@@ -187,7 +268,33 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
     }
     
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return "Penalties"
+        if searchController.isActive {
+            return nil
+        }
+        if penaltiesSegmentedControl.selectedSegmentIndex == 0 {
+            if penalties.count > 1 {
+                return "\(penalties.count) Penalties (\(checkedInCount)/\(penalties.count) Checked In)"
+            } else if penalties.count == 1 {
+                return "1 Penalty (\(checkedInCount)/\(1) Checked In)"
+            } else {
+                return "0 Penalties"
+            }
+        }
+        if penaltiesSegmentedControl.selectedSegmentIndex == 1 {
+            if penalties.count != 1 {
+                return "\(penalties.count) Penalties Checked In"
+            } else {
+                return "1 Penalty Checked In"
+            }
+        }
+        if penaltiesSegmentedControl.selectedSegmentIndex == 2 {
+            if penalties.count != 1 {
+                return "\(penalties.count) Penalties Not Checked In"
+            } else {
+                return "1 Penalty Not Checked In"
+            }
+        }
+        return nil
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -211,6 +318,9 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
         var penalty = penalties[indexPath.row]
         if searchController.isActive {
             penalty = filteredPenalties[indexPath.row]
+            searchController.isActive = false
+            searchController.searchBar.text = ""
+            searchController.dismiss(animated: false, completion: nil)
         }
         
         var checkedIn = "No"
@@ -225,9 +335,9 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
             penaltyMessage = penalty.penalty
         }
         
-        let formattedTimeStamp = GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp)
+        let formattedTimeStamp = GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp, includeDate: false)
         
-        let message = "\n Checked in: \(checkedIn) \n Bib Number: \(penalty.bibNumber) \n Gender: \(penalty.gender) \n Bike Type: \(penalty.bikeType) \n Bike Color: \(penalty.bikeColor) \n Helmet Color: \(penalty.helmetColor) \n Top Color: \(penalty.topColor) \n Pant Color: \(penalty.pantColor) \n Penalty: \(penaltyMessage) \n Approximate Mile: \(penalty.approximateMile) \n\n Submitted by \(penalty.submittedBy) at \(formattedTimeStamp)."
+        let message = "\n Checked in: \(checkedIn) \n Bib Number: \(penalty.bibNumber) \n Penalty: \(penaltyMessage) \n Approximate Mile: \(penalty.approximateMile) \n Gender: \(penalty.gender) \n Bike Type: \(penalty.bikeType) \n Bike Color: \(penalty.bikeColor) \n Helmet Color: \(penalty.helmetColor) \n Top Color: \(penalty.topColor) \n Pant Color: \(penalty.pantColor) \n\n Submitted by \(penalty.submittedBy) at \(formattedTimeStamp)."
         
         let penaltyDetails = UIAlertController(title: "Penalty Details", message: message, preferredStyle: .alert)
         
@@ -268,7 +378,7 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
                         if let success = success {
                             if success {
                                 self.displayAlert(title: "Success", message: "The penalty was successfully deleted.")
-                                self.getPenalties(eventID: (self.event?.uid)!)
+                                self.getPenalties()
                             } else {
                                 self.displayAlert(title: "Error", message: "The penalty couldn't be deleted.")
                             }
@@ -281,6 +391,19 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
                 }
             })
             self.present(alert, animated: false, completion: nil)
+        }
+    }
+    
+}
+
+extension PenaltiesTableViewController: MFMailComposeViewControllerDelegate {
+    
+    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
+        controller.dismiss(animated: true, completion: nil)
+        if result == .failed {
+            displayAlert(title: "Email Not Sent", message: "The email failed to send, please try again.")
+        } else if result == .sent {
+            displayAlert(title: "Email Sent", message: "The email was successfully sent.")
         }
     }
     

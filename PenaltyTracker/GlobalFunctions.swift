@@ -32,7 +32,10 @@ class GlobalFunctions: NSObject {
         return attributedString
     }
     
-    func formattedTimestamp(ts: String) -> String {
+    func formattedTimestamp(ts: String, includeDate: Bool) -> String {
+        let year = ts.substring(with: 2..<4)
+        let month = Int(ts.substring(with: 4..<6))
+        let day = Int(ts.substring(with: 6..<8))
         var hour = Int(ts.substring(with: 9..<11))
         let minute = ts.substring(with: 12..<14)
         var suffix = "AM"
@@ -45,7 +48,13 @@ class GlobalFunctions: NSObject {
         if hour! == 0 {
             hour = 12
         }
-        return "\(hour!):\(minute) \(suffix)"
+        
+        if includeDate {
+            return "\(month!)/\(day!)/\(year) \(hour!):\(minute) \(suffix)"
+        } else {
+            return "\(hour!):\(minute) \(suffix)"
+        }
+        
     }
     
     func parse(pin: String) -> [String] {

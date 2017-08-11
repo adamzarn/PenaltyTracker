@@ -14,6 +14,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
     var eventID: String?
     var penalty: Penalty?
+    var navBarHeight: CGFloat!
     
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     
@@ -71,6 +72,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        navBarHeight = (self.navigationController?.navigationBar.frame.size.height)! + UIApplication.shared.statusBarFrame.size.height
         genderSegmentedControl.tintColor = appDelegate.darkBlueColor
         
         bikeLengthsTextField.isEnabled = false
@@ -230,14 +232,14 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     
     func keyboardWillShow(notification: Notification) {
         if notesTextView.isFirstResponder {
-            view.frame.origin.y = -1*getKeyboardHeight(notification: notification)
+            view.frame.origin.y = (-1*getKeyboardHeight(notification: notification))+navBarHeight
         } else if approximateMileTextField.isFirstResponder || secondsTextField.isFirstResponder || bikeLengthsTextField.isFirstResponder || penaltyTextField.isFirstResponder {
-            view.frame.origin.y = (-1*getKeyboardHeight(notification: notification))/2
+            view.frame.origin.y = (-1*getKeyboardHeight(notification: notification)+navBarHeight)/2
         }
     }
     
     func keyboardWillHide(notification: Notification) {
-        view.frame.origin.y = 0
+        view.frame.origin.y = navBarHeight
     }
     
     func getKeyboardHeight(notification: Notification) -> CGFloat {

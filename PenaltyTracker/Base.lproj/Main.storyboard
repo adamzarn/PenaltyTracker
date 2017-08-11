@@ -719,7 +719,7 @@
                                     <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="S2J-L1-YnR">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="29"/>
                                         <segments>
-                                            <segment title="All Penalties"/>
+                                            <segment title="All"/>
                                             <segment title="Checked In"/>
                                             <segment title="Not Checked In"/>
                                         </segments>
@@ -760,14 +760,14 @@
                                 <rect key="frame" x="177" y="168" width="20" height="20"/>
                             </activityIndicatorView>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="79" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="sYZ-5q-DZP">
-                                <rect key="frame" x="0.0" y="156.5" width="375" height="510.5"/>
+                                <rect key="frame" x="0.0" y="157" width="375" height="466"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <prototypes>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="penaltyCell" rowHeight="79" id="Qge-5G-dvI" customClass="PenaltyCell" customModule="PenaltyTracker" customModuleProvider="target">
                                         <rect key="frame" x="0.0" y="28" width="375" height="79"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="Qge-5G-dvI" id="KN6-4L-D9f">
-                                            <rect key="frame" x="0.0" y="0.0" width="375" height="78"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="375" height="78.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VKI-co-sH0">
@@ -879,18 +879,33 @@
                                     <outlet property="delegate" destination="QAp-AF-RBg" id="EYA-Mp-Al4"/>
                                 </connections>
                             </tableView>
+                            <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="038-ID-9mg">
+                                <rect key="frame" x="0.0" y="623" width="375" height="44"/>
+                                <items>
+                                    <barButtonItem style="plain" systemItem="flexibleSpace" id="SxZ-Hu-dbh"/>
+                                    <barButtonItem title="Email CSV" id="59x-HC-hEx">
+                                        <connections>
+                                            <action selector="emailCSVButtonPressed:" destination="QAp-AF-RBg" id="4vF-r3-LYq"/>
+                                        </connections>
+                                    </barButtonItem>
+                                    <barButtonItem style="plain" systemItem="flexibleSpace" id="6L8-iN-4UD"/>
+                                </items>
+                            </toolbar>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
                             <constraint firstItem="MN0-Hy-LhA" firstAttribute="top" secondItem="xt5-0E-hAP" secondAttribute="bottom" constant="20" id="9yP-BN-oF1"/>
-                            <constraint firstAttribute="bottom" secondItem="sYZ-5q-DZP" secondAttribute="bottom" id="B2f-3V-rhX"/>
                             <constraint firstItem="MN0-Hy-LhA" firstAttribute="centerX" secondItem="B4r-ev-JRQ" secondAttribute="centerX" id="FLr-Gn-lmh"/>
                             <constraint firstItem="sYZ-5q-DZP" firstAttribute="leading" secondItem="B4r-ev-JRQ" secondAttribute="leading" id="K5n-2V-vZF"/>
+                            <constraint firstItem="038-ID-9mg" firstAttribute="leading" secondItem="B4r-ev-JRQ" secondAttribute="leading" id="KcW-rl-2Gk"/>
                             <constraint firstItem="xt5-0E-hAP" firstAttribute="top" secondItem="Im7-CA-ZsS" secondAttribute="bottom" constant="8" id="Ovi-hf-S9Q"/>
                             <constraint firstAttribute="trailing" secondItem="sYZ-5q-DZP" secondAttribute="trailing" id="UUV-Zu-EWS"/>
+                            <constraint firstAttribute="trailing" secondItem="038-ID-9mg" secondAttribute="trailing" id="VDK-cx-58R"/>
                             <constraint firstItem="sYZ-5q-DZP" firstAttribute="top" secondItem="xt5-0E-hAP" secondAttribute="bottom" constant="8.5" id="YHX-HM-PMH"/>
                             <constraint firstAttribute="trailing" secondItem="xt5-0E-hAP" secondAttribute="trailing" constant="8" id="hAh-9b-IkQ"/>
                             <constraint firstItem="xt5-0E-hAP" firstAttribute="leading" secondItem="B4r-ev-JRQ" secondAttribute="leading" constant="8" id="mCV-sL-yRY"/>
+                            <constraint firstItem="038-ID-9mg" firstAttribute="top" secondItem="sYZ-5q-DZP" secondAttribute="bottom" id="ngq-ej-zjb"/>
+                            <constraint firstItem="BAD-ND-zdS" firstAttribute="top" secondItem="038-ID-9mg" secondAttribute="bottom" id="wRK-bs-fBU"/>
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" title="Event" id="sGj-z5-ADr">
@@ -910,10 +925,12 @@
                     </navigationItem>
                     <connections>
                         <outlet property="aiv" destination="MN0-Hy-LhA" id="Z8Z-3I-O23"/>
+                        <outlet property="emailCSVButton" destination="59x-HC-hEx" id="QU7-8x-ene"/>
                         <outlet property="navItem" destination="sGj-z5-ADr" id="c9R-E4-VAs"/>
                         <outlet property="penaltiesSegmentedControl" destination="S2J-L1-YnR" id="i8Y-Iy-tCq"/>
                         <outlet property="penaltiesTableView" destination="sYZ-5q-DZP" id="rQx-pp-a5M"/>
                         <outlet property="sortSegmentedControl" destination="Szn-34-K9y" id="ss3-sE-G1Z"/>
+                        <outlet property="toolbar" destination="038-ID-9mg" id="pC5-1d-C8c"/>
                         <segue destination="FQm-Tr-ZBk" kind="show" id="n4P-Cl-p6y"/>
                     </connections>
                 </viewController>

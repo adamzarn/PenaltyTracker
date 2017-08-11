@@ -44,11 +44,12 @@ class FirebaseClient: NSObject {
         })
     }
     
-    func getPenalties(eventID: String, completion: @escaping (_ penalties: [Penalty]?, _ error: NSString?) -> ()) {
+    func getPenalties(eventID: String, completion: @escaping (_ penalties: [Penalty]?,_ checkedInCount: Int?, _ error: NSString?) -> ()) {
         self.ref.child("Penalties").child(eventID).observeSingleEvent(of: .value, with: { snapshot in
             if snapshot.exists() {
                 if let data = snapshot.value {
                     var penalties: [Penalty] = []
+                    var checkedInCount = 0
                     for (key, value) in data as! NSDictionary {
                         let penaltyObject = value as AnyObject
                         let bibNumber = penaltyObject.value(forKey: "bibNumber") as! String
@@ -68,13 +69,16 @@ class FirebaseClient: NSObject {
                         let checkedIn = penaltyObject.value(forKey: "checkedIn") as! Bool
                         let newPenalty = Penalty(uid: key as! String, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy, timeStamp: timeStamp, checkedIn: checkedIn)
                         penalties.append(newPenalty)
+                        if checkedIn {
+                            checkedInCount += 1
+                        }
                     }
-                    completion(penalties, nil)
+                    completion(penalties, checkedInCount, nil)
                 } else {
-                    completion(nil, "Could not retrieve Data")
+                    completion(nil, nil, "Could not retrieve Data")
                 }
             } else {
-                completion(nil, "No Penalties Yet")
+                completion(nil, nil, "No Penalties Yet")
             }
         })
     }

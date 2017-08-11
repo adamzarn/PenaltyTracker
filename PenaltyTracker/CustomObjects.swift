@@ -215,7 +215,7 @@ class PenaltyCell: UITableViewCell {
         submittedByLabel.text = "Submitted by \(penalty.submittedBy)"
         submittedByLabel.textColor = .lightGray
         
-        timeStampLabel.attributedText = GlobalFunctions.shared.bold(string: GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp), size: 14.0, color: appDelegate.darkBlueColor)
+        timeStampLabel.attributedText = GlobalFunctions.shared.bold(string: GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp, includeDate: false), size: 14.0, color: appDelegate.darkBlueColor)
         
         if ["Blatant Littering", "Drafting"].contains(penalty.penalty) {
             cardView.backgroundColor = appDelegate.darkBlueColor
