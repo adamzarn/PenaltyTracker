@@ -233,29 +233,9 @@ class PenaltyCell: UITableViewCell {
         }
         if let penalty = self.penalty {
             if penalty.checkedIn {
-                if GlobalFunctions.shared.hasConnectivity() {
-                    FirebaseClient.shared.unCheckIn(eventID: self.eventID!, penaltyID: penalty.uid) { (success) -> () in
-                        if let success = success {
-                            if success {
-                                self.delegate?.confirmUnCheckIn(bibNumber: penalty.bibNumber)
-                            }
-                        }
-                    }
-                } else {
-                    self.delegate?.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
-                }
+                self.delegate?.confirmUnCheckIn(bibNumber: penalty.bibNumber, eventID: eventID!, penaltyID: penalty.uid)
             } else {
-                if GlobalFunctions.shared.hasConnectivity() {
-                    FirebaseClient.shared.checkIn(eventID: self.eventID!, penaltyID: penalty.uid){ (success) -> () in
-                        if let success = success {
-                            if success {
-                                self.delegate?.confirmCheckIn(bibNumber: penalty.bibNumber)
-                            }
-                        }
-                    }
-                } else {
-                    self.delegate?.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
-                }
+                self.delegate?.confirmCheckIn(bibNumber: penalty.bibNumber, eventID: eventID!, penaltyID: penalty.uid)
             }
         }
     }

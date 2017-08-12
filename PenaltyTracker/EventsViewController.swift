@@ -194,14 +194,18 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        correctPin = events[indexPath.row].pin
-        eventRow = indexPath.row
-        pin1.becomeFirstResponder()
-        tableView.deselectRow(at: indexPath, animated: false)
-        self.view.addSubview(dimView!)
-        self.view.bringSubview(toFront: dimView!)
-        enterPinView.isHidden = false
-        self.view.bringSubview(toFront: enterPinView)
+        if events[indexPath.row].admin == Auth.auth().currentUser?.uid {
+            accessEvent(row: indexPath.row)
+        } else {
+            correctPin = events[indexPath.row].pin
+            eventRow = indexPath.row
+            pin1.becomeFirstResponder()
+            tableView.deselectRow(at: indexPath, animated: false)
+            self.view.addSubview(dimView!)
+            self.view.bringSubview(toFront: dimView!)
+            enterPinView.isHidden = false
+            self.view.bringSubview(toFront: enterPinView)
+        }
     }
     
     func accessEvent(row: Int) {

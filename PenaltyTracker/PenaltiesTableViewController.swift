@@ -156,19 +156,41 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         self.present(alert, animated: false, completion: nil)
     }
     
-    func confirmCheckIn(bibNumber: String) {
+    func confirmCheckIn(bibNumber: String, eventID: String, penaltyID: String) {
         let alert = UIAlertController(title: "Check in Bib Number \(bibNumber)?", message: nil, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Cancel", style: .default, handler: nil))
         alert.addAction(UIAlertAction(title: "Yes", style: .default) { (_) in
+            if GlobalFunctions.shared.hasConnectivity() {
+                FirebaseClient.shared.checkIn(eventID: eventID, penaltyID: penaltyID) { (success) -> () in
+                    if let success = success {
+                        if success {
+                            self.getPenalties()
+                        }
+                    }
+                }
+            } else {
+                self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
+            }
             self.getPenalties()
         })
         self.present(alert, animated: false, completion: nil)
     }
     
-    func confirmUnCheckIn(bibNumber: String) {
+    func confirmUnCheckIn(bibNumber: String, eventID: String, penaltyID: String) {
         let alert = UIAlertController(title: "Undo check in for Bib Number \(bibNumber)?", message: nil, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Cancel", style: .default, handler: nil))
         alert.addAction(UIAlertAction(title: "Yes", style: .default) { (_) in
+            if GlobalFunctions.shared.hasConnectivity() {
+                FirebaseClient.shared.unCheckIn(eventID: eventID, penaltyID: penaltyID) { (success) -> () in
+                    if let success = success {
+                        if success {
+                            self.getPenalties()
+                        }
+                    }
+                }
+            } else {
+                self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
+            }
             self.getPenalties()
         })
         self.present(alert, animated: false, completion: nil)
