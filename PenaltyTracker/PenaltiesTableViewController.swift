@@ -236,41 +236,24 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
             let name = event.name
             let date = formatDate(from: event.date)
             let segment = penaltiesSegmentedControl.titleForSegment(at: penaltiesSegmentedControl.selectedSegmentIndex)!
-            let fileName = "\(date)_\(name)_\(segment) Penalties.csv"
-            print(fileName)
-            let path = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+            
             let header = "Checked In,Bib Number,Penalty,Bike Lengths,Seconds,Approximate Mile,Gender,Bike Type,Bike Color,Helmet Color,Top Color,Pant Color,Submitted By,Time Submitted,Notes"
 
-            var dataString = header
+            var csvString = header
             for p in penalties {
                 var checkedInString = "No"
                 if p.checkedIn {
                     checkedInString = "Yes"
                 }
-                dataString = "\(dataString)\n\(checkedInString),\(p.bibNumber),\(p.penalty),\(p.bikeLengths),\(p.seconds),\(p.approximateMile),\(p.gender),\(p.bikeType),\(p.bikeColor),\(p.helmetColor),\(p.topColor),\(p.pantColor),\(p.submittedBy),\(p.timeStamp),\(p.notes)"
-            }
-            do {
-                try dataString.write(to: path!, atomically: true, encoding: String.Encoding.utf8)
-            } catch {
-                print("Failed to create file")
-                print("\(error)")
+                csvString = "\(csvString)\n\(checkedInString),\(p.bibNumber),\(p.penalty),\(p.bikeLengths),\(p.seconds),\(p.approximateMile),\(p.gender),\(p.bikeType),\(p.bikeColor),\(p.helmetColor),\(p.topColor),\(p.pantColor),\(p.submittedBy),\(p.timeStamp),\(p.notes)"
             }
             
-            let mailComposerVC = MFMailComposeViewController()
-            mailComposerVC.mailComposeDelegate = self
-            
-            mailComposerVC.setSubject(fileName)
-            mailComposerVC.setToRecipients([(Auth.auth().currentUser?.email)!])
-           
-            do {
-                let data = try Data(contentsOf: path!)
-                mailComposerVC.addAttachmentData(data, mimeType: "text/csv", fileName: fileName)
-                present(mailComposerVC, animated: false, completion: nil)
-            } catch {
-                print(error.localizedDescription)
-            }
-        
+            let selectRecipientsVC = storyboard?.instantiateViewController(withIdentifier: "SelectRecipientsViewController") as! SelectRecipientsViewController
+            selectRecipientsVC.csvString = csvString
+            selectRecipientsVC.fileName = "\(date)_\(name)_\(segment) Penalties.csv"
+            self.navigationController?.pushViewController(selectRecipientsVC, animated: false)
         }
+        
     }
     
     func formatDate(from date: String) -> String {
@@ -413,19 +396,6 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
                 }
             })
             self.present(alert, animated: false, completion: nil)
-        }
-    }
-    
-}
-
-extension PenaltiesTableViewController: MFMailComposeViewControllerDelegate {
-    
-    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
-        controller.dismiss(animated: true, completion: nil)
-        if result == .failed {
-            displayAlert(title: "Email Not Sent", message: "The email failed to send, please try again.")
-        } else if result == .sent {
-            displayAlert(title: "Email Sent", message: "The email was successfully sent.")
         }
     }
     

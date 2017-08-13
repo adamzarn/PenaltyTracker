@@ -241,3 +241,18 @@ class PenaltyCell: UITableViewCell {
     }
     
 }
+
+struct Recipient {
+    
+    let email: String
+    let name: String
+    var selected: Bool
+    
+    init(email: String, name: String, selected: Bool) {
+        self.name = name
+        self.email = email
+        self.selected = selected
+    }
+    
+    
+}
