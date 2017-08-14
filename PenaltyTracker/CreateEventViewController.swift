@@ -247,8 +247,24 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
                 FirebaseClient.shared.createEvent(uid: existingEventUid, event: event) { (success, message) -> () in
                     if let success = success, let message = message {
                         if success {
-                            let alert = UIAlertController(title: "Success!", message: message as String, preferredStyle: .alert)
-                            alert.addAction(UIAlertAction(title: "OK", style: .default) { (_) in
+                            let alert = UIAlertController(title: "Success!", message: message as String,  preferredStyle: .alert)
+                            alert.addAction(UIAlertAction(title: "Sure", style: .default) { (_) in
+                                self.nameTextField.text = ""
+                                self.cityTextField.text = ""
+                                self.stateTextField.text = ""
+                                self.startTimeTextField.text = ""
+                                self.endTimeTextField.text = ""
+                                self.calendarView.deselectAllDates()
+                                self.pin1.text = ""
+                                self.pin2.text = ""
+                                self.pin3.text = ""
+                                self.pin4.text = ""
+                                let selectRecipientsVC = self.storyboard?.instantiateViewController(withIdentifier: "SelectRecipientsViewController") as! SelectRecipientsViewController
+                                selectRecipientsVC.subject = "PenaltyTracker Event Invite"
+                                selectRecipientsVC.emailBody = "Hello,\nYou've been invited to officiate an event called \"\(event.name)\" with PenaltyTracker. Follow the steps below to get started.\n\n1. Open/Download the PenaltyTracker App.\n2. Create an account or login.\n3. Search for \"\(event.name)\" in the events page and select it.\n4. When asked to enter a PIN, enter \(event.pin).\n\nThat's it. We hope you enjoy issuing penalties with PenaltyTracker!"
+                                self.navigationController?.pushViewController(selectRecipientsVC, animated: false)
+                            })
+                            alert.addAction(UIAlertAction(title: "Not right now", style: .default) { (_) in
                                 if existingEventUid == "" {
                                     self.navigationController?.popToRootViewController(animated: true)
                                 } else {

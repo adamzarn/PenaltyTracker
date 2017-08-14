@@ -883,6 +883,12 @@
                                 <rect key="frame" x="0.0" y="623" width="375" height="44"/>
                                 <items>
                                     <barButtonItem style="plain" systemItem="flexibleSpace" id="SxZ-Hu-dbh"/>
+                                    <barButtonItem title="Send Invites" id="uM5-eo-BQx">
+                                        <connections>
+                                            <action selector="sendInvitesButtonPressed:" destination="QAp-AF-RBg" id="wCQ-5v-eVn"/>
+                                        </connections>
+                                    </barButtonItem>
+                                    <barButtonItem style="plain" systemItem="flexibleSpace" id="PJY-mL-4zz"/>
                                     <barButtonItem title="Email CSV" id="59x-HC-hEx">
                                         <connections>
                                             <action selector="emailCSVButtonPressed:" destination="QAp-AF-RBg" id="4vF-r3-LYq"/>
@@ -916,7 +922,7 @@
                                     <action selector="logPenaltyButtonPressed:" destination="QAp-AF-RBg" id="jPi-JR-nZG"/>
                                 </connections>
                             </barButtonItem>
-                            <barButtonItem systemItem="edit" id="e3S-wj-eJp">
+                            <barButtonItem id="e3S-wj-eJp">
                                 <connections>
                                     <action selector="editEventButtonPressed:" destination="QAp-AF-RBg" id="KCm-bx-Dic"/>
                                 </connections>
@@ -925,10 +931,12 @@
                     </navigationItem>
                     <connections>
                         <outlet property="aiv" destination="MN0-Hy-LhA" id="Z8Z-3I-O23"/>
+                        <outlet property="editButton" destination="e3S-wj-eJp" id="MAo-Jm-M32"/>
                         <outlet property="emailCSVButton" destination="59x-HC-hEx" id="QU7-8x-ene"/>
                         <outlet property="navItem" destination="sGj-z5-ADr" id="c9R-E4-VAs"/>
                         <outlet property="penaltiesSegmentedControl" destination="S2J-L1-YnR" id="i8Y-Iy-tCq"/>
                         <outlet property="penaltiesTableView" destination="sYZ-5q-DZP" id="rQx-pp-a5M"/>
+                        <outlet property="sendInvitesButton" destination="uM5-eo-BQx" id="trv-x8-cjC"/>
                         <outlet property="sortSegmentedControl" destination="Szn-34-K9y" id="ss3-sE-G1Z"/>
                         <outlet property="toolbar" destination="038-ID-9mg" id="pC5-1d-C8c"/>
                         <segue destination="FQm-Tr-ZBk" kind="show" id="n4P-Cl-p6y"/>
@@ -1016,7 +1024,7 @@
                                                 <rect key="frame" x="0.0" y="40" width="247" height="30"/>
                                                 <nil key="textColor"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                <textInputTraits key="textInputTraits"/>
+                                                <textInputTraits key="textInputTraits" autocapitalizationType="words" autocorrectionType="no" spellCheckingType="no"/>
                                                 <connections>
                                                     <outlet property="delegate" destination="Oym-t3-fEU" id="E51-zf-6NN"/>
                                                 </connections>
@@ -1025,7 +1033,7 @@
                                                 <rect key="frame" x="0.0" y="80" width="247" height="30"/>
                                                 <nil key="textColor"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                <textInputTraits key="textInputTraits" keyboardType="emailAddress"/>
+                                                <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" keyboardType="emailAddress"/>
                                                 <connections>
                                                     <outlet property="delegate" destination="Oym-t3-fEU" id="3fp-Y2-xYT"/>
                                                 </connections>

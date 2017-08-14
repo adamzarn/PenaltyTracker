@@ -15,6 +15,8 @@ class SelectRecipientsViewController: UIViewController {
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
     var csvString: String?
     var fileName: String?
+    var subject: String?
+    var emailBody: String?
     var recipients: [Recipient] = []
     let defaults = UserDefaults.standard
     var currentTextField: UITextField?
@@ -39,16 +41,22 @@ class SelectRecipientsViewController: UIViewController {
         dimView = UIView(frame:UIScreen.main.bounds)
         dimView?.backgroundColor = UIColor(white: 0.4, alpha: 0.5)
         sendEmailButton.tintColor = appDelegate.darkBlueColor
+        
+        if csvString != nil {
+            sendEmailButton.title = "Send CSV Email"
+        } else {
+            sendEmailButton.title = "Send Invite Email"
+        }
+        
         toolbar.isTranslucent = false
         
     }
-
-    override func viewDidAppear(_ animated: Bool) {
+    
+    override func viewWillAppear(_ animated: Bool) {
         recipientsTableView.isHidden = true
         addRecipientView.isHidden = true
-    
-        getRecipients()
         
+        getRecipients()
     }
     
     override func viewDidDisappear(_ animated: Bool) {
@@ -56,7 +64,7 @@ class SelectRecipientsViewController: UIViewController {
     }
     
     func getRecipients() {
-        
+        self.recipients = []
         if let recipients = defaults.value(forKey: "recipients") {
             for (key, value) in recipients as! NSDictionary {
                 let newRecipient = Recipient(email: key as! String, name: value as! String, selected: false)
@@ -117,6 +125,19 @@ class SelectRecipientsViewController: UIViewController {
                 
             }
             
+            if let emailBody = emailBody, let subject = subject {
+                
+                let mailComposerVC = MFMailComposeViewController()
+                mailComposerVC.mailComposeDelegate = self
+                
+                mailComposerVC.setSubject(subject)
+                mailComposerVC.setMessageBody(emailBody, isHTML: false)
+                mailComposerVC.setToRecipients(recipients)
+                
+                present(mailComposerVC, animated: false, completion: nil)
+                
+            }
+            
         } else {
             displayAlert(title: "Cannot Send Mail", message: "This device is not set up to send mail.")
         }
@@ -131,7 +152,6 @@ class SelectRecipientsViewController: UIViewController {
                 toRecipients.append(recipient.email)
             }
         }
-        print(toRecipients)
         sendEmail(recipients: toRecipients)
     }
     
@@ -147,15 +167,17 @@ class SelectRecipientsViewController: UIViewController {
     }
     
     @IBAction func submitAddRecipientButtonPressed(_ sender: Any) {
-        if nameTextField.text != "" && emailTextField.text != "" {
+        if nameTextField.text == "" {
+            displayAlert(title: "No Name", message: "You must provide a name for a new recipient.")
+        } else if emailTextField.text == "" {
+            displayAlert(title: "No Email", message: "You must provide an email for a new recipient.")
+        } else {
             let newRecipient = Recipient(email: emailTextField.text!, name: nameTextField.text!, selected: false)
             recipients.append(newRecipient)
             loadRecipients()
-            print(defaults.value(forKey: "recipients")!)
+            getRecipients()
             recipientsTableView.reloadData()
             dismissAddRecipientView()
-        } else {
-            displayAlert(title: "Bad Name or Email", message: "You must provide a name and an email for a new recipient.")
         }
         
     }
@@ -163,6 +185,8 @@ class SelectRecipientsViewController: UIViewController {
     func dismissAddRecipientView() {
         currentTextField?.resignFirstResponder()
         addRecipientView.isHidden = true
+        nameTextField.text = ""
+        emailTextField.text = ""
         dimView?.removeFromSuperview()
     }
 
@@ -226,6 +250,18 @@ extension SelectRecipientsViewController: UITableViewDelegate, UITableViewDataSo
         }
         tableView.deselectRow(at: indexPath, animated: false)
         recipients[indexPath.row].selected = !recipients[indexPath.row].selected
+    }
+    
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            self.recipients.remove(at: indexPath.row)
+            loadRecipients()
+            getRecipients()
+        }
     }
     
     func checkmarkImageView() -> UIImageView {

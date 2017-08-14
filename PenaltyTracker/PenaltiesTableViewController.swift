@@ -22,11 +22,13 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
 
     @IBOutlet weak var penaltiesTableView: UITableView!
     @IBOutlet weak var navItem: UINavigationItem!
+    @IBOutlet weak var editButton: UIBarButtonItem!
     @IBOutlet weak var penaltiesSegmentedControl: UISegmentedControl!
     @IBOutlet weak var sortSegmentedControl: UISegmentedControl!
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     @IBOutlet weak var toolbar: UIToolbar!
     @IBOutlet weak var emailCSVButton: UIBarButtonItem!
+    @IBOutlet weak var sendInvitesButton: UIBarButtonItem!
     
     let searchController = UISearchController(searchResultsController: nil)
     
@@ -55,6 +57,18 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         penaltiesTableView.refreshControl = self.refreshControl
         
         emailCSVButton.tintColor = appDelegate.darkBlueColor
+        sendInvitesButton.tintColor = appDelegate.darkBlueColor
+        
+        if let event = event {
+            if Auth.auth().currentUser?.uid != event.admin {
+                editButton.title = ""
+                editButton.isEnabled = false
+            } else {
+                editButton.title = "Edit"
+                editButton.isEnabled = true
+            }
+        }
+
     
     }
     
@@ -245,12 +259,36 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
                 if p.checkedIn {
                     checkedInString = "Yes"
                 }
-                csvString = "\(csvString)\n\(checkedInString),\(p.bibNumber),\(p.penalty),\(p.bikeLengths),\(p.seconds),\(p.approximateMile),\(p.gender),\(p.bikeType),\(p.bikeColor),\(p.helmetColor),\(p.topColor),\(p.pantColor),\(p.submittedBy),\(p.timeStamp),\(p.notes)"
+                
+                var note = ""
+                let notesArray = p.notes.characters.split{$0 == "\n"}.map(String.init)
+                for line in notesArray {
+                    note = note + line
+                }
+                
+                print(p.notes.characters.split{$0 == "\n"}.map(String.init))
+                
+                csvString = "\(csvString)\n\(checkedInString),\(p.bibNumber),\(p.penalty),\(p.bikeLengths),\(p.seconds),\(p.approximateMile),\(p.gender),\(p.bikeType),\(p.bikeColor),\(p.helmetColor),\(p.topColor),\(p.pantColor),\(p.submittedBy),\(p.timeStamp),\(note)"
             }
             
             let selectRecipientsVC = storyboard?.instantiateViewController(withIdentifier: "SelectRecipientsViewController") as! SelectRecipientsViewController
             selectRecipientsVC.csvString = csvString
             selectRecipientsVC.fileName = "\(date)_\(name)_\(segment) Penalties.csv"
+            self.navigationController?.pushViewController(selectRecipientsVC, animated: false)
+        }
+        
+    }
+    
+    @IBAction func sendInvitesButtonPressed(_ sender: Any) {
+        sendInvites()
+    }
+    
+    func sendInvites() {
+        
+        if let event = event {
+            let selectRecipientsVC = self.storyboard?.instantiateViewController(withIdentifier: "SelectRecipientsViewController") as! SelectRecipientsViewController
+            selectRecipientsVC.subject = "PenaltyTracker Event Invite"
+            selectRecipientsVC.emailBody = "Hello,\nYou've been invited to officiate an event called \"\(event.name)\" with PenaltyTracker. Follow the steps below to get started.\n\n1. Open/Download the PenaltyTracker App.\n2. Create an account or login.\n3. Search for \"\(event.name)\" in the events page and select it.\n4. When asked to enter a PIN, enter \(event.pin).\n\nThat's it. We hope you enjoy issuing penalties with PenaltyTracker!"
             self.navigationController?.pushViewController(selectRecipientsVC, animated: false)
         }
         

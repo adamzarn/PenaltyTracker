@@ -374,7 +374,11 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         
         var penaltyMessage = ""
         if penalty == "Drafting" {
-            penaltyMessage = "\(penalty) (\(bikeLengths) lengths, \(seconds) s)"
+            if bikeLengths == "1" {
+                penaltyMessage = "\(penalty) (\(bikeLengths) length, \(seconds) s)"
+            } else {
+                penaltyMessage = "\(penalty) (\(bikeLengths) lengths, \(seconds) s)"
+            }
         } else {
             penaltyMessage = penalty
         }

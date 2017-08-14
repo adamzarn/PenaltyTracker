@@ -158,7 +158,7 @@ class FirebaseClient: NSObject {
                 completion(false, "error")
             } else {
                 if uid == "" {
-                    completion(true, "Your event was successfully created. We'll take you to the Events list now where you can access it.")
+                    completion(true, "Your event was successfully created. Would you like to send invite emails to this event's officials?")
                 } else {
                     completion(true, "Your event was successfully edited.")
                 }
