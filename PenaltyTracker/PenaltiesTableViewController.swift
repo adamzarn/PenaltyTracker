@@ -136,7 +136,7 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd HH:mm:ss:SSS"
         let dateString = dateFormatter.string(from: date)
-        return GlobalFunctions.shared.formattedTimestamp(ts: dateString, includeDate: true)
+        return GlobalFunctions.shared.formattedTimestamp(ts: dateString, includeDate: true, includeTime: true)
     }
     
     func sortPenalties() {
@@ -378,7 +378,7 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
             penaltyMessage = penalty.penalty
         }
         
-        let formattedTimeStamp = GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp, includeDate: false)
+        let formattedTimeStamp = GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp, includeDate: false, includeTime: true)
         
         let message = "\n Checked in: \(checkedIn) \n Bib Number: \(penalty.bibNumber) \n Penalty: \(penaltyMessage) \n Approximate Mile: \(penalty.approximateMile) \n Gender: \(penalty.gender) \n Bike Type: \(penalty.bikeType) \n Bike Color: \(penalty.bikeColor) \n Helmet Color: \(penalty.helmetColor) \n Top Color: \(penalty.topColor) \n Pant Color: \(penalty.pantColor) \n\n Submitted by \(penalty.submittedBy) at \(formattedTimeStamp)."
         

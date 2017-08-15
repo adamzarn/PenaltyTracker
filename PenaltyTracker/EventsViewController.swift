@@ -149,6 +149,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
             FirebaseClient.shared.getEvents() { (events, error) -> () in
                 if let events = events {
                     self.events = events
+                    self.events.sort { $0.date < $1.date }
                 } else {
                     print(error!)
                 }

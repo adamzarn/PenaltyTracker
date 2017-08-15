@@ -72,7 +72,7 @@ struct PenaltyType {
     
 }
 
-struct Penalty {
+struct Penalty: Equatable {
     
     let uid: String
     let bibNumber: String
@@ -134,6 +134,22 @@ struct Penalty {
                 "edits": edits] as AnyObject
     }
     
+    public static func ==(old: Penalty, new: Penalty) -> Bool {
+        return
+            old.bibNumber == new.bibNumber &&
+            old.gender == new.gender &&
+            old.bikeType == new.bikeType &&
+            old.bikeColor == new.bikeColor &&
+            old.helmetColor == new.helmetColor &&
+            old.topColor == new.topColor &&
+            old.pantColor == new.pantColor &&
+            old.penalty == new.penalty &&
+            old.bikeLengths == new.bikeLengths &&
+            old.seconds == new.seconds &&
+            old.approximateMile == new.approximateMile &&
+            old.notes == new.notes
+    }
+    
 }
 
 class CalendarCell: JTAppleCell {
@@ -170,9 +186,10 @@ class EventCell: UITableViewCell {
         
         locationLabel.attributedText = GlobalFunctions.shared.italic(string: event.city + ", " + event.state, size: 14.0, color: .black)
         
-        dateLabel.attributedText = GlobalFunctions.shared.bold(string: event.date, size: 14.0, color: appDelegate.darkBlueColor)
+        let formattedDate = GlobalFunctions.shared.formattedTimestamp(ts: event.date, includeDate: true, includeTime: false)
+        dateLabel.attributedText = GlobalFunctions.shared.bold(string: formattedDate, size: 14.0, color: appDelegate.darkBlueColor)
         
-        createdByLabel.text = "Created by \(event.adminName) on \(event.createdDate)"
+        createdByLabel.text = "Created by \(event.adminName) on \(GlobalFunctions.shared.formattedTimestamp(ts:event.createdDate, includeDate: true, includeTime: false))"
         createdByLabel.textColor = .lightGray
     }
     
@@ -216,7 +233,7 @@ class PenaltyCell: UITableViewCell {
         }
         submittedByLabel.textColor = .lightGray
         
-        timeStampLabel.attributedText = GlobalFunctions.shared.bold(string: GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp, includeDate: false), size: 14.0, color: appDelegate.darkBlueColor)
+        timeStampLabel.attributedText = GlobalFunctions.shared.bold(string: GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp, includeDate: false, includeTime: true), size: 14.0, color: appDelegate.darkBlueColor)
         
         cardView.layer.borderWidth = 1
         if ["Blatant Littering", "Drafting"].contains(penalty.penalty) {

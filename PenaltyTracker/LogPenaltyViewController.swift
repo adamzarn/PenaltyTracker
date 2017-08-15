@@ -396,12 +396,8 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
             }
         }
         
-        if let penalty = penalty {
-            if !penalty.edited {
-                confirmBibNumber()
-            } else {
-                confirmPenaltyDetails()
-            }
+        if penalty != nil {
+            confirmPenaltyDetails()
         } else {
             confirmBibNumber()
         }
@@ -461,6 +457,13 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         
         var newPenalty = Penalty(uid: existingPenaltyUid, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy!, timeStamp: "", checkedIn: false, edited: false, edits: [:])
         
+        if let existingPenalty = self.penalty {
+            if existingPenalty == newPenalty {
+                displayAlert(title: "No changes made.", message: "There are no changes to submit.")
+                return
+            }
+        }
+        
         var penaltyMessage = ""
         if penalty == "Drafting" {
             if bikeLengths == "1" {
@@ -478,11 +481,11 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         
         let submitAction = UIAlertAction(title: "Submit", style: .default) { (_) in
             if existingPenaltyUid == "" {
-                newPenalty.timeStamp = self.getCurrentDateAndTime()
+                newPenalty.timeStamp = GlobalFunctions.shared.getCurrentDateAndTime()
                 newPenalty.edits = [newPenalty.timeStamp:submittedBy!]
             } else {
                 newPenalty.timeStamp = (self.penalty?.timeStamp)!
-                existingEdits[self.getCurrentDateAndTime()] = submittedBy
+                existingEdits[GlobalFunctions.shared.getCurrentDateAndTime()] = submittedBy
                 newPenalty.edits = existingEdits
                 newPenalty.edited = true
             }
@@ -527,14 +530,6 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         self.present(alert, animated: false, completion: nil)
     }
     
-    func getCurrentDateAndTime() -> String {
-        let date = Date()
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd HH:mm:ss:SSS"
-        let stringDate = formatter.string(from: date)
-        return stringDate
-    }
-    
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool  {
         
         if textField == bibNumberTextField {
@@ -564,7 +559,7 @@ extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
         } else {
             cell.textLabel?.text = "Edited by \(String(describing: edits[indexPath.row].name))"
         }
-        cell.detailTextLabel?.text = GlobalFunctions.shared.formattedTimestamp(ts: edits[indexPath.row].timeStamp, includeDate: true)
+        cell.detailTextLabel?.text = GlobalFunctions.shared.formattedTimestamp(ts: edits[indexPath.row].timeStamp, includeDate: true, includeTime: true)
         return cell
     }
     

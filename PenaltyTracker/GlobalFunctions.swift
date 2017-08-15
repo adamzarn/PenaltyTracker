@@ -32,7 +32,7 @@ class GlobalFunctions: NSObject {
         return attributedString
     }
     
-    func formattedTimestamp(ts: String, includeDate: Bool) -> String {
+    func formattedTimestamp(ts: String, includeDate: Bool, includeTime: Bool) -> String {
         let year = ts.substring(with: 2..<4)
         let month = Int(ts.substring(with: 4..<6))
         let day = Int(ts.substring(with: 6..<8))
@@ -49,12 +49,24 @@ class GlobalFunctions: NSObject {
             hour = 12
         }
         
-        if includeDate {
+        if includeDate && includeTime {
             return "\(month!)/\(day!)/\(year) \(hour!):\(minute) \(suffix)"
-        } else {
+        } else if !includeDate && includeTime {
             return "\(hour!):\(minute) \(suffix)"
+        } else if includeDate && !includeTime {
+            return "\(month!)/\(day!)/\(year)"
+        } else {
+            return ""
         }
         
+    }
+    
+    func getCurrentDateAndTime() -> String {
+        let date = Date()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd HH:mm:ss:SSS"
+        let stringDate = formatter.string(from: date)
+        return stringDate
     }
     
     func parse(pin: String) -> [String] {

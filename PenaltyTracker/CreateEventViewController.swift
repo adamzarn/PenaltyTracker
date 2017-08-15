@@ -159,7 +159,7 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         let city = cityTextField.text!
         let state = stateTextField.text!
         let selectedDate = calendarView.selectedDates[0]
-        formatter.dateFormat = "M/d/yy"
+        formatter.dateFormat = "yyyyMMdd HH:mm:ss:SSS"
         let date = formatter.string(from: selectedDate)
         let createdDate = formatter.string(from: Date())
         let pin = "\(pin1.text!)\(pin2.text!)\(pin3.text!)\(pin4.text!)"
@@ -172,7 +172,7 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         
         let event = Event(uid: existingEventUid, name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, admin: admin!, adminName: adminName!)
         
-        let message = "Does everything look correct? \n\n Event: \(name) \n Location: \(city), \(state) \n Date: \(date) \n PIN: \(pin) \n Created by: \(adminName!)"
+        let message = "Does everything look correct? \n\n Event: \(name) \n Location: \(city), \(state) \n Date: \(GlobalFunctions.shared.formattedTimestamp(ts: date, includeDate: true, includeTime: false)) \n PIN: \(pin) \n Created by: \(adminName!)"
         
         let confirmEventDetails = UIAlertController(title: "Confirm Event Details", message: message, preferredStyle: .alert)
         
