@@ -16,21 +16,11 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
 
     @IBOutlet weak var aiv: UIActivityIndicatorView!
 
+    @IBOutlet weak var stackView: UIStackView!
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
     
     //Lifecycle methods
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        let backgroundGradient = CAGradientLayer()
-        backgroundGradient.colors = [appDelegate.darkBlueColor.cgColor, appDelegate.lightBlueColor.cgColor]
-        backgroundGradient.locations = [0.0, 1.0]
-        backgroundGradient.frame = view.frame
-        view.layer.insertSublayer(backgroundGradient, at: 0)
-        
-    }
     
     override func viewDidAppear(_ animated: Bool) {
         setUpView()

@@ -9,17 +9,23 @@
 import UIKit
 import Firebase
 
-class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerViewDelegate, UIPickerViewDataSource, UITextViewDelegate {
+class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerViewDelegate, UIPickerViewDataSource, UITextViewDelegate, UIScrollViewDelegate {
     
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
     var eventID: String?
     var penalty: Penalty?
     var navBarHeight: CGFloat!
+    var edits: [Edit] = []
+
+    @IBOutlet weak var scrollView: UIScrollView!
+    @IBOutlet weak var contentView: UIView!
     
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     
     @IBOutlet weak var bibNumberTextField: UITextField!
-    @IBOutlet weak var genderSegmentedControl: UISegmentedControl!
+    @IBOutlet weak var genderTextField: UITextField!
+    
+    @IBOutlet weak var appearanceLabel: UILabel!
     
     @IBOutlet weak var bikeTypeTextField: UITextField!
     @IBOutlet weak var bikeColorTextField: UITextField!
@@ -27,6 +33,8 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     
     @IBOutlet weak var topColorTextField: UITextField!
     @IBOutlet weak var pantColorTextField: UITextField!
+    
+    @IBOutlet weak var penaltyLabel: UILabel!
     
     @IBOutlet weak var penaltyTextField: UITextField!
     @IBOutlet weak var bikeLengthsTextField: UITextField!
@@ -36,12 +44,20 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     @IBOutlet weak var cardLabel: UILabel!
     @IBOutlet weak var approximateMileTextField: UITextField!
     
+    @IBOutlet weak var notesLabel: UILabel!
+    
     @IBOutlet weak var notesTextView: UITextView!
     
-    @IBOutlet weak var submitButton: UIButton!
-    @IBOutlet weak var stackView: UIStackView!
+    @IBOutlet weak var editsLabel: UILabel!
+    @IBOutlet weak var editsTableView: UITableView!
     
-    var toolBar: UIToolbar!
+    @IBOutlet weak var submitButton: UIBarButtonItem!
+
+    @IBOutlet weak var toolbar: UIToolbar!
+    var doneToolbar: UIToolbar!
+    
+    var genderPicker: UIPickerView!
+    var genders = ["", "Male", "Female"]
     
     var bikePicker: UIPickerView!
     var bikes: [String] = []
@@ -56,10 +72,12 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     var penaltyTypes: [PenaltyType] = []
     
     var bikeLengthsPicker: UIPickerView!
-    let bikeLengths = Array(1...5)
+    let bikeLengths = ["1","2","3","4","5"]
     
     var secondsPicker: UIPickerView!
-    let seconds = Array(1...60)
+    var seconds = ["26","27","28","29","30","31","32","33","34","35","36","37","38",
+                   "39","40","41","42","43","44","45","46","47","48","49","50","51",
+                   "52","53","54","55","56","57","58","59","60+"]
     
     var approximateMilePicker: UIPickerView!
     let approximateMiles = Array(1...120)
@@ -72,8 +90,9 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        toolbar.isTranslucent = false
+        
         navBarHeight = (self.navigationController?.navigationBar.frame.size.height)! + UIApplication.shared.statusBarFrame.size.height
-        genderSegmentedControl.tintColor = appDelegate.darkBlueColor
         
         bikeLengthsTextField.isEnabled = false
         secondsTextField.isEnabled = false
@@ -86,8 +105,6 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         notesTextView.layer.borderColor = UIColor.lightGray.cgColor
         notesTextView.layer.cornerRadius = 5
         
-        stackView.isHidden = true
-        
         aiv.isHidden = false
         aiv.startAnimating()
         
@@ -95,7 +112,6 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
             FirebaseClient.shared.getDescriptors() { (bikes, colors, penaltyTypes, error) -> () in
                 self.aiv.isHidden = true
                 self.aiv.stopAnimating()
-                self.stackView.isHidden = false
                 if let bikes = bikes, let colors = colors, let penaltyTypes = penaltyTypes {
                     self.bikes = bikes
                     self.colors = colors
@@ -109,15 +125,9 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
             self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
         }
         
-        submitButton.setTitleColor(appDelegate.darkBlueColor, for: .normal)
-        
         if let penalty = penalty {
             bibNumberTextField.text = penalty.bibNumber
-            if penalty.gender == "M" {
-                genderSegmentedControl.selectedSegmentIndex = 0
-            } else {
-                genderSegmentedControl.selectedSegmentIndex = 1
-            }
+            genderTextField.text = penalty.gender
             bikeTypeTextField.text = penalty.bikeType
             bikeColorTextField.text = penalty.bikeColor
             helmetColorTextField.text = penalty.helmetColor
@@ -137,8 +147,18 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
                 cardLabel.text = "Yellow Card"
                 cardLabel.textColor = .black
             }
-            submitButton.setTitle("SUBMIT CHANGES", for: .normal)
+            let editsDict = penalty.edits
+            updateEditsArray(existingEdits: editsDict)
+            submitButton.title = "SUBMIT CHANGES"
         }
+        
+        appearanceLabel.textColor = appDelegate.darkBlueColor
+        penaltyLabel.textColor = appDelegate.darkBlueColor
+        notesLabel.textColor = appDelegate.darkBlueColor
+        editsLabel.textColor = appDelegate.darkBlueColor
+        
+        submitButton.tintColor = appDelegate.darkBlueColor
+        
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -151,57 +171,68 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         unsubscribeFromKeyboardNotifications()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        self.scrollView.contentSize = CGSize(width: self.view.frame.size.width, height: self.contentView.frame.size.height)
+        
+        scrollView.isScrollEnabled = true
+        print(scrollView.frame.size.height)
+        print(contentView.frame.size.height)
+    }
+    
     func setUpTextFields() {
-        toolBar = UIToolbar(frame: CGRect(x: 0, y: 0, width: screenWidth, height: 44))
-        toolBar.barStyle = .default
+        doneToolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: screenWidth, height: 44))
+        doneToolbar.barStyle = .default
         let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil)
         let done = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(dismissKeyboard))
         
-        toolBar.items = [flex, done]
+        doneToolbar.items = [flex, done]
         
-        bibNumberTextField.inputAccessoryView = toolBar
+        bibNumberTextField.inputAccessoryView = doneToolbar
+        
+        genderPicker = createPicker()
+        setUpInputView(textField: genderTextField, picker: genderPicker, doneToolbar: doneToolbar)
         
         bikePicker = createPicker()
-        setUpInputView(textField: bikeTypeTextField, picker: bikePicker, toolBar: toolBar)
+        setUpInputView(textField: bikeTypeTextField, picker: bikePicker, doneToolbar: doneToolbar)
         
         bikeColorPicker = createPicker()
-        setUpInputView(textField: bikeColorTextField, picker: bikeColorPicker, toolBar: toolBar)
+        setUpInputView(textField: bikeColorTextField, picker: bikeColorPicker, doneToolbar: doneToolbar)
         helmetColorPicker = createPicker()
-        setUpInputView(textField: helmetColorTextField, picker: helmetColorPicker, toolBar: toolBar)
+        setUpInputView(textField: helmetColorTextField, picker: helmetColorPicker, doneToolbar: doneToolbar)
         topColorPicker = createPicker()
-        setUpInputView(textField: topColorTextField, picker: topColorPicker, toolBar: toolBar)
+        setUpInputView(textField: topColorTextField, picker: topColorPicker, doneToolbar: doneToolbar)
         pantColorPicker = createPicker()
-        setUpInputView(textField: pantColorTextField, picker: pantColorPicker, toolBar: toolBar)
+        setUpInputView(textField: pantColorTextField, picker: pantColorPicker, doneToolbar: doneToolbar)
         
         penaltyTypePicker = createPicker()
-        setUpInputView(textField: penaltyTextField, picker: penaltyTypePicker, toolBar: toolBar)
+        setUpInputView(textField: penaltyTextField, picker: penaltyTypePicker, doneToolbar: doneToolbar)
         
         bikeLengthsPicker = createPicker()
-        setUpInputView(textField: bikeLengthsTextField, picker: bikeLengthsPicker, toolBar: toolBar)
+        setUpInputView(textField: bikeLengthsTextField, picker: bikeLengthsPicker, doneToolbar: doneToolbar)
         
         secondsPicker = createPicker()
-        setUpInputView(textField: secondsTextField, picker: secondsPicker, toolBar: toolBar)
+        setUpInputView(textField: secondsTextField, picker: secondsPicker, doneToolbar: doneToolbar)
         
         approximateMilePicker = createPicker()
-        setUpInputView(textField: approximateMileTextField, picker: approximateMilePicker, toolBar: toolBar)
+        setUpInputView(textField: approximateMileTextField, picker: approximateMilePicker, doneToolbar: doneToolbar)
         
-        notesTextView.inputAccessoryView = toolBar
+        notesTextView.inputAccessoryView = doneToolbar
         
     }
     
     func createPicker() -> UIPickerView {
-        return UIPickerView(frame: CGRect(x: 0, y: toolBar.frame.size.height, width: screenWidth, height: 150))
+        return UIPickerView(frame: CGRect(x: 0, y: doneToolbar.frame.size.height, width: screenWidth, height: 150))
     }
     
-    func setUpInputView(textField: UITextField, picker: UIPickerView, toolBar: UIToolbar) {
+    func setUpInputView(textField: UITextField, picker: UIPickerView, doneToolbar: UIToolbar) {
         picker.delegate = self
         picker.dataSource = self
         picker.showsSelectionIndicator = true
-        let view = UIView(frame:CGRect(x: 0, y: 0, width: screenWidth, height: toolBar.frame.size.height + picker.frame.size.height))
+        let view = UIView(frame:CGRect(x: 0, y: 0, width: screenWidth, height: doneToolbar.frame.size.height + picker.frame.size.height))
         view.backgroundColor = .clear
         view.addSubview(picker)
         textField.inputView = view
-        textField.inputAccessoryView = toolBar
+        textField.inputAccessoryView = doneToolbar
     }
     
     func dismissKeyboard() {
@@ -255,7 +286,9 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     }
     
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-        if pickerView == bikePicker {
+        if pickerView == genderPicker {
+            return genders.count
+        } else if pickerView == bikePicker {
             return bikes.count
         } else if pickerView == approximateMilePicker {
             return approximateMiles.count
@@ -270,24 +303,40 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         }
     }
     
-    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-        if pickerView == bikePicker {
-            return bikes[row]
+    func pickerView(_ pickerView: UIPickerView, viewForRow row: Int, forComponent component: Int, reusing view: UIView?) -> UIView {
+        let pickerLabel = UILabel()
+        pickerLabel.adjustsFontSizeToFitWidth = true
+        pickerLabel.minimumScaleFactor = 0.5
+        pickerLabel.textAlignment = .center
+        var title = ""
+        if pickerView == genderPicker {
+            title = genders[row]
+        } else if pickerView == bikePicker {
+            title = bikes[row]
         } else if pickerView == approximateMilePicker {
-            return String(approximateMiles[row])
+            title = String(approximateMiles[row])
         } else if pickerView == penaltyTypePicker {
-            return penaltyTypes[row].name
+            title = penaltyTypes[row].name
         } else if pickerView == bikeLengthsPicker {
-            return String(bikeLengths[row])
+            title = bikeLengths[row]
         } else if pickerView == secondsPicker {
-            return String(seconds[row])
+            title = seconds[row]
         } else {
-            return colors[row]
+            title = colors[row]
         }
+        let myTitle = NSAttributedString(string: title, attributes: [NSFontAttributeName:UIFont.systemFont(ofSize: 32.0),NSForegroundColorAttributeName: UIColor.black])
+        pickerLabel.attributedText = myTitle
+        return pickerLabel
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, rowHeightForComponent component: Int) -> CGFloat {
+        return 50
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
-        if pickerView == bikePicker {
+        if pickerView == genderPicker {
+            currentTextField?.text = genders[row]
+        } else if pickerView == bikePicker {
             currentTextField?.text = bikes[row]
         } else if pickerView == approximateMilePicker {
             currentTextField?.text = String(approximateMiles[row])
@@ -347,13 +396,51 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
             }
         }
         
-        if approximateMileTextField.text! == "" {
-            displayAlert(title: "No Approximate Mile", message: "You must provide an approximate mile.")
-            return
+        if let penalty = penalty {
+            if !penalty.edited {
+                confirmBibNumber()
+            } else {
+                confirmPenaltyDetails()
+            }
+        } else {
+            confirmBibNumber()
         }
         
+    }
+    
+    func confirmBibNumber() {
+        let alert = UIAlertController(title: "Confirm Bib Number", message: "Enter the Bib Number again to confirm.", preferredStyle: .alert)
+        
+        let submitAction = UIAlertAction(title: "OK", style: .default) { (_) in
+            if let field = alert.textFields?[0] {
+                if field.text == self.bibNumberTextField.text {
+                    self.confirmPenaltyDetails()
+                } else {
+                    self.displayAlert(title: "Bib Numbers Don't Match", message: "Make sure the bib number matches the one entered earlier and try again.")
+                }
+            }
+        }
+                
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (_) in }
+        
+        alert.addTextField { (textField) in
+            textField.placeholder = "Bib Number"
+            textField.textAlignment = .center
+            textField.keyboardType = .numberPad
+            textField.frame.size.height = 50.0
+            textField.font = textField.font?.withSize(20.0)
+        }
+        
+        alert.addAction(submitAction)
+        alert.addAction(cancelAction)
+        
+        self.present(alert, animated: true, completion: nil)
+    }
+    
+    func confirmPenaltyDetails() {
+        
         let bibNumber = bibNumberTextField.text!
-        let gender = genderSegmentedControl.titleForSegment(at: genderSegmentedControl.selectedSegmentIndex)!
+        let gender = genderTextField.text!
         let bikeType = bikeTypeTextField.text!
         let bikeColor = bikeColorTextField.text!
         let helmetColor = helmetColorTextField.text!
@@ -366,11 +453,13 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         let submittedBy = appDelegate.currentUser?.name
         let notes = notesTextView.text!
         var existingPenaltyUid = ""
+        var existingEdits = ["":""]
         if let existingPenalty = self.penalty {
             existingPenaltyUid = existingPenalty.uid
+            existingEdits = existingPenalty.edits
         }
         
-        var newPenalty = Penalty(uid: existingPenaltyUid, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy!, timeStamp: "", checkedIn: false)
+        var newPenalty = Penalty(uid: existingPenaltyUid, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy!, timeStamp: "", checkedIn: false, edited: false, edits: [:])
         
         var penaltyMessage = ""
         if penalty == "Drafting" {
@@ -390,8 +479,12 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         let submitAction = UIAlertAction(title: "Submit", style: .default) { (_) in
             if existingPenaltyUid == "" {
                 newPenalty.timeStamp = self.getCurrentDateAndTime()
+                newPenalty.edits = [newPenalty.timeStamp:submittedBy!]
             } else {
                 newPenalty.timeStamp = (self.penalty?.timeStamp)!
+                existingEdits[self.getCurrentDateAndTime()] = submittedBy
+                newPenalty.edits = existingEdits
+                newPenalty.edited = true
             }
             if GlobalFunctions.shared.hasConnectivity() {
                 FirebaseClient.shared.postPenalty(eventID: (self.eventID)!, penaltyID: existingPenaltyUid, penalty: newPenalty) { (success, message) -> () in
@@ -401,6 +494,9 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
                             alert.addAction(UIAlertAction(title: "OK", style: .default) { (_) in
                                 if existingPenaltyUid == "" {
                                     self.navigationController?.popViewController(animated: true)
+                                } else {
+                                    self.updateEditsArray(existingEdits: existingEdits)
+                                    self.editsTableView.reloadData()
                                 }
                             })
                             self.present(alert, animated: false, completion: nil)
@@ -422,7 +518,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         confirmPenaltyDetails.addAction(submitAction)
         
         self.present(confirmPenaltyDetails, animated: false, completion: nil)
-        
+
     }
     
     func displayAlert(title: String, message: String) {
@@ -451,6 +547,34 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         }
         
         return true
+    }
+    
+}
+
+extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return edits.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "editCell")!
+        if indexPath.row == 0 {
+            cell.textLabel?.text = "Issued by \(String(describing: edits[indexPath.row].name))"
+        } else {
+            cell.textLabel?.text = "Edited by \(String(describing: edits[indexPath.row].name))"
+        }
+        cell.detailTextLabel?.text = GlobalFunctions.shared.formattedTimestamp(ts: edits[indexPath.row].timeStamp, includeDate: true)
+        return cell
+    }
+    
+    func updateEditsArray(existingEdits: [String:String]) {
+        edits = []
+        for (key, value) in existingEdits {
+            let newEdit = Edit(name: value as String, timeStamp: key as String)
+            self.edits.append(newEdit)
+        }
+        edits.sort { $0.timeStamp < $1.timeStamp }
     }
     
 }

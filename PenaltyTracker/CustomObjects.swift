@@ -32,12 +32,10 @@ struct Event {
     let state: String
     let date: String
     let createdDate: String
-    let startTime: String
-    let endTime: String
     let admin: String
     let adminName: String
     
-    init(uid: String, name: String, pin: String, city: String, state: String, date: String, createdDate: String, startTime: String, endTime: String, admin: String, adminName: String) {
+    init(uid: String, name: String, pin: String, city: String, state: String, date: String, createdDate: String, admin: String, adminName: String) {
         self.uid = uid
         self.name = name
         self.pin = pin
@@ -45,8 +43,6 @@ struct Event {
         self.state = state
         self.date = date
         self.createdDate = createdDate
-        self.startTime = startTime
-        self.endTime = endTime
         self.admin = admin
         self.adminName = adminName
     }
@@ -58,8 +54,6 @@ struct Event {
                 "state": state,
                 "date": date,
                 "createdDate": createdDate,
-                "startTime": startTime,
-                "endTime": endTime,
                 "admin": admin,
                 "adminName": adminName] as AnyObject
     }
@@ -96,8 +90,10 @@ struct Penalty {
     let submittedBy: String
     var timeStamp: String
     var checkedIn: Bool
+    var edited: Bool
+    var edits: [String: String]
     
-    init(uid: String, bibNumber: String, gender: String, bikeType: String, bikeColor: String, helmetColor: String, topColor: String, pantColor: String, penalty: String, bikeLengths: String, seconds: String, approximateMile: String, notes: String, submittedBy: String, timeStamp: String, checkedIn: Bool) {
+    init(uid: String, bibNumber: String, gender: String, bikeType: String, bikeColor: String, helmetColor: String, topColor: String, pantColor: String, penalty: String, bikeLengths: String, seconds: String, approximateMile: String, notes: String, submittedBy: String, timeStamp: String, checkedIn: Bool, edited: Bool, edits: [String: String]) {
         self.uid = uid
         self.bibNumber = bibNumber
         self.gender = gender
@@ -114,6 +110,8 @@ struct Penalty {
         self.submittedBy = submittedBy
         self.timeStamp = timeStamp
         self.checkedIn = checkedIn
+        self.edited = edited
+        self.edits = edits
     }
     
     func toAnyObject() -> AnyObject {
@@ -131,7 +129,9 @@ struct Penalty {
                 "notes": notes,
                 "submittedBy": submittedBy,
                 "timeStamp": timeStamp,
-                "checkedIn": false] as AnyObject
+                "checkedIn": false,
+                "edited": edited,
+                "edits": edits] as AnyObject
     }
     
 }
@@ -162,7 +162,6 @@ class EventCell: UITableViewCell {
     @IBOutlet weak var eventNameLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var dateLabel: UILabel!
-    @IBOutlet weak var timeLabel: UILabel!
     @IBOutlet weak var createdByLabel: UILabel!
     
     func setUpCell(event: Event) {
@@ -172,8 +171,6 @@ class EventCell: UITableViewCell {
         locationLabel.attributedText = GlobalFunctions.shared.italic(string: event.city + ", " + event.state, size: 14.0, color: .black)
         
         dateLabel.attributedText = GlobalFunctions.shared.bold(string: event.date, size: 14.0, color: appDelegate.darkBlueColor)
-        
-        timeLabel.text = event.startTime + " to " + event.endTime
         
         createdByLabel.text = "Created by \(event.adminName) on \(event.createdDate)"
         createdByLabel.textColor = .lightGray
@@ -208,18 +205,28 @@ class PenaltyCell: UITableViewCell {
         } else {
             checkedInButton.setImage(nil, for: .normal)
         }
-        bibNumberLabel.attributedText = GlobalFunctions.shared.bold(string: penalty.bibNumber, size: 14.0, color: .black)
+        bibNumberLabel.attributedText = GlobalFunctions.shared.bold(string: penalty.bibNumber, size: 20.0, color: .black)
         
         penaltyLabel.text = penalty.penalty
         
-        submittedByLabel.text = "Submitted by \(penalty.submittedBy)"
+        if penalty.edited {
+            submittedByLabel.text = "Submitted by \(penalty.submittedBy), Edited"
+        } else {
+            submittedByLabel.text = "Submitted by \(penalty.submittedBy)"
+        }
         submittedByLabel.textColor = .lightGray
         
         timeStampLabel.attributedText = GlobalFunctions.shared.bold(string: GlobalFunctions.shared.formattedTimestamp(ts: penalty.timeStamp, includeDate: false), size: 14.0, color: appDelegate.darkBlueColor)
         
+        cardView.layer.borderWidth = 1
         if ["Blatant Littering", "Drafting"].contains(penalty.penalty) {
+            cardView.layer.borderColor = appDelegate.darkBlueColor.cgColor
             cardView.backgroundColor = appDelegate.darkBlueColor
+        } else if penalty.penalty == "Other" {
+            cardView.layer.borderColor = UIColor.black.cgColor
+            cardView.backgroundColor = UIColor.white
         } else {
+            cardView.layer.borderColor = appDelegate.yellowColor.cgColor
             cardView.backgroundColor = appDelegate.yellowColor
         }
         
@@ -254,5 +261,16 @@ struct Recipient {
         self.selected = selected
     }
     
+}
+
+struct Edit {
+    
+    let name: String
+    let timeStamp: String
+    
+    init(name: String, timeStamp: String) {
+        self.name = name
+        self.timeStamp = timeStamp
+    }
     
 }

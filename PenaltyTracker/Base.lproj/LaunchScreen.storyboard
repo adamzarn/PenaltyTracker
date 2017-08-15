@@ -6,6 +6,8 @@
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="12089"/>
+        <capability name="Aspect ratio constraints" minToolsVersion="5.1"/>
+        <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -21,32 +23,36 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Penalty" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Nu4-g7-NEZ">
-                                <rect key="frame" x="115" y="200" width="146" height="54"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="45"/>
-                                <nil key="textColor"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Tracker" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="FHe-Ei-FY7">
-                                <rect key="frame" x="115" y="263" width="146" height="54"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Penalty Tracker" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="FHe-Ei-FY7">
+                                <rect key="frame" x="36" y="306.5" width="303" height="54"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="45"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="BETA" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1W7-Xb-WAa">
-                                <rect key="frame" x="167" y="333" width="41" height="21"/>
+                                <rect key="frame" x="167" y="376.5" width="41" height="21"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LifeTimeFitnessLogo.png" translatesAutoresizingMaskIntoConstraints="NO" id="8DJ-tL-mR6">
+                                <rect key="frame" x="20" y="174.5" width="335" height="142"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="8DJ-tL-mR6" secondAttribute="height" multiplier="349:148" id="IKX-5a-K9q"/>
+                                </constraints>
+                            </imageView>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="FHe-Ei-FY7" firstAttribute="top" secondItem="Nu4-g7-NEZ" secondAttribute="bottom" constant="9" id="DlM-EX-dIH"/>
+                            <constraint firstItem="FHe-Ei-FY7" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leadingMargin" constant="20" id="4yr-M6-HJN"/>
+                            <constraint firstItem="8DJ-tL-mR6" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="73q-86-GtH"/>
                             <constraint firstItem="1W7-Xb-WAa" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="K9O-RY-MZH"/>
+                            <constraint firstItem="8DJ-tL-mR6" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" constant="20" id="L5s-WI-iHx"/>
+                            <constraint firstAttribute="trailing" secondItem="8DJ-tL-mR6" secondAttribute="trailing" constant="20" id="L9q-tX-Qbx"/>
                             <constraint firstItem="1W7-Xb-WAa" firstAttribute="top" secondItem="FHe-Ei-FY7" secondAttribute="bottom" constant="16" id="Rdo-JR-vKa"/>
-                            <constraint firstItem="Nu4-g7-NEZ" firstAttribute="top" secondItem="Llm-lL-Icb" secondAttribute="bottom" constant="180" id="fsC-0c-rnu"/>
-                            <constraint firstItem="Nu4-g7-NEZ" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="t3p-zt-0Vf"/>
+                            <constraint firstAttribute="trailingMargin" secondItem="FHe-Ei-FY7" secondAttribute="trailing" constant="20" id="Znd-gQ-dBi"/>
+                            <constraint firstItem="FHe-Ei-FY7" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="dJQ-co-YDy"/>
+                            <constraint firstItem="FHe-Ei-FY7" firstAttribute="top" secondItem="8DJ-tL-mR6" secondAttribute="bottom" constant="-10" id="haG-aq-XzL"/>
                             <constraint firstItem="FHe-Ei-FY7" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="xJd-Rw-f2w"/>
                         </constraints>
                     </view>
@@ -56,4 +62,7 @@
             <point key="canvasLocation" x="52" y="374.66266866566718"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="LifeTimeFitnessLogo.png" width="349" height="148"/>
+    </resources>
 </document>

@@ -17,8 +17,6 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     @IBOutlet weak var nameTextField: UITextField!
     @IBOutlet weak var cityTextField: UITextField!
     @IBOutlet weak var stateTextField: UITextField!
-    @IBOutlet weak var startTimeTextField: UITextField!
-    @IBOutlet weak var endTimeTextField: UITextField!
     @IBOutlet weak var pin1: UITextField!
     @IBOutlet weak var pin2: UITextField!
     @IBOutlet weak var pin3: UITextField!
@@ -28,36 +26,10 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     var event: Event?
     
     var statePicker: UIPickerView!
-    let stateOptions = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
+    let stateOptions = ["", "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
                         "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT",
                         "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
                         "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
-    
-    var timePicker: UIPickerView!
-    let timeOptions = ["12:00 AM", "12:15 AM", "12:30 AM", "12:45 AM",
-                       "1:00 AM",  "1:15 AM",  "1:30 AM",  "1:45 AM",
-                       "2:00 AM",  "2:15 AM",  "2:30 AM",  "2:45 AM",
-                       "3:00 AM",  "3:15 AM",  "3:30 AM",  "3:45 AM",
-                       "4:00 AM",  "4:15 AM",  "4:30 AM",  "4:45 AM",
-                       "5:00 AM",  "5:15 AM",  "5:30 AM",  "5:45 AM",
-                       "6:00 AM",  "6:15 AM",  "6:30 AM",  "6:45 AM",
-                       "7:00 AM",  "7:15 AM",  "7:30 AM",  "7:45 AM",
-                       "8:00 AM",  "8:15 AM",  "8:30 AM",  "8:45 AM",
-                       "9:00 AM",  "9:15 AM",  "9:30 AM",  "9:45 AM",
-                       "10:00 AM", "10:15 AM", "10:30 AM", "10:45 AM",
-                       "11:00 AM", "11:15 AM", "11:30 AM", "11:45 AM",
-                       "12:00 PM", "12:15 PM", "12:30 PM", "12:45 PM",
-                       "1:00 PM",  "1:15 PM",  "1:30 PM",  "1:45 PM",
-                       "2:00 PM",  "2:15 PM",  "2:30 PM",  "2:45 PM",
-                       "3:00 PM",  "3:15 PM",  "3:30 PM",  "3:45 PM",
-                       "4:00 PM",  "4:15 PM",  "4:30 PM",  "4:45 PM",
-                       "5:00 PM",  "5:15 PM",  "5:30 PM",  "5:45 PM",
-                       "6:00 PM",  "6:15 PM",  "6:30 PM",  "6:45 PM",
-                       "7:00 PM",  "7:15 PM",  "7:30 PM",  "7:45 PM",
-                       "8:00 PM",  "8:15 PM",  "8:30 PM",  "8:45 PM",
-                       "9:00 PM",  "9:15 PM",  "9:30 PM",  "9:45 PM",
-                       "10:00 PM", "10:15 PM", "10:30 PM", "10:45 PM",
-                       "11:00 PM", "11:15 PM", "11:30 PM", "11:45 PM"]
 
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
     
@@ -108,20 +80,6 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         stateTextField.inputView = stateInputView
         stateTextField.inputAccessoryView = toolBar
         
-        timePicker = UIPickerView(frame: CGRect(x: 0, y: toolBar.frame.size.height, width: screenWidth, height: 150))
-        timePicker.delegate = self
-        timePicker.dataSource = self
-        timePicker.showsSelectionIndicator = true
-        
-        let timeInputView = UIView(frame:CGRect(x: 0, y: 0, width: screenWidth, height: toolBar.frame.size.height + statePicker.frame.size.height))
-        timeInputView.backgroundColor = .clear
-        timeInputView.addSubview(timePicker)
-        
-        startTimeTextField.inputView = timeInputView
-        startTimeTextField.inputAccessoryView = toolBar
-        endTimeTextField.inputView = timeInputView
-        endTimeTextField.inputAccessoryView = toolBar
-        
         pin1.inputAccessoryView = toolBar
         pin2.inputAccessoryView = toolBar
         pin3.inputAccessoryView = toolBar
@@ -134,8 +92,6 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
             nameTextField.text = event.name
             cityTextField.text = event.city
             stateTextField.text = event.state
-            startTimeTextField.text = event.startTime
-            endTimeTextField.text = event.endTime
             let pinDigits = GlobalFunctions.shared.parse(pin: event.pin)
             pin1.text = pinDigits[0]
             pin2.text = pinDigits[1]
@@ -189,24 +145,6 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
             return
         }
         
-        if startTimeTextField.text! == "" {
-            displayAlert(title: "No Start Time", message: "You must specify a start time for this event.")
-            return
-        }
-        
-        if endTimeTextField.text! == "" {
-            displayAlert(title: "No End Time", message: "You must specify an end time for this event.")
-            return
-        }
-        
-        let start = timeOptions.index(of: startTimeTextField.text!)!
-        let end = timeOptions.index(of: endTimeTextField.text!)!
-        
-        if start >= end {
-            displayAlert(title: "Bad Start and End Times", message: "The start time must be before the end time.")
-            return
-        }
-        
         if calendarView.selectedDates.count == 0 {
             displayAlert(title: "No Date", message: "You must select a date for this event.")
             return
@@ -220,8 +158,6 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         let name = nameTextField.text!
         let city = cityTextField.text!
         let state = stateTextField.text!
-        let startTime = startTimeTextField.text!
-        let endTime = endTimeTextField.text!
         let selectedDate = calendarView.selectedDates[0]
         formatter.dateFormat = "M/d/yy"
         let date = formatter.string(from: selectedDate)
@@ -234,9 +170,9 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
             existingEventUid = existingEvent.uid
         }
         
-        let event = Event(uid: existingEventUid, name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, startTime: startTime, endTime: endTime, admin: admin!, adminName: adminName!)
+        let event = Event(uid: existingEventUid, name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, admin: admin!, adminName: adminName!)
         
-        let message = "Does everything look correct? \n\n Event: \(name) \n Location: \(city), \(state) \n Start Time: \(startTime) \n End Time: \(endTime) \n Date: \(date) \n PIN: \(pin) \n Created by: \(adminName!)"
+        let message = "Does everything look correct? \n\n Event: \(name) \n Location: \(city), \(state) \n Date: \(date) \n PIN: \(pin) \n Created by: \(adminName!)"
         
         let confirmEventDetails = UIAlertController(title: "Confirm Event Details", message: message, preferredStyle: .alert)
         
@@ -252,8 +188,6 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
                                 self.nameTextField.text = ""
                                 self.cityTextField.text = ""
                                 self.stateTextField.text = ""
-                                self.startTimeTextField.text = ""
-                                self.endTimeTextField.text = ""
                                 self.calendarView.deselectAllDates()
                                 self.pin1.text = ""
                                 self.pin2.text = ""
@@ -381,27 +315,24 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     }
     
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-        if pickerView == statePicker {
-            return stateOptions.count
-        } else {
-            return timeOptions.count
-        }
+        return stateOptions.count
     }
     
-    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-        if pickerView == statePicker {
-            return stateOptions[row]
-        } else {
-            return timeOptions[row]
-        }
+    func pickerView(_ pickerView: UIPickerView, viewForRow row: Int, forComponent component: Int, reusing view: UIView?) -> UIView {
+        let pickerLabel = UILabel()
+        pickerLabel.textAlignment = .center
+        let title = stateOptions[row]
+        let myTitle = NSAttributedString(string: title, attributes: [NSFontAttributeName:UIFont.systemFont(ofSize: 32.0),NSForegroundColorAttributeName: UIColor.black])
+        pickerLabel.attributedText = myTitle
+        return pickerLabel
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, rowHeightForComponent component: Int) -> CGFloat {
+        return 50
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
-        if pickerView == statePicker {
-            stateTextField.text = stateOptions[row]
-        } else {
-            currentTextField!.text = timeOptions[row]
-        }
+        stateTextField.text = stateOptions[row]
     }
     
 }
@@ -415,7 +346,7 @@ extension CreateEventViewController: JTAppleCalendarViewDelegate, JTAppleCalenda
         formatter.locale = Calendar.current.locale
         
         let startDate = Date()
-        let endDate = formatter.date(from: "2100 12 31")!
+        let endDate = Calendar.current.date(byAdding: .day, value: 720, to: startDate)!
         
         let parameters = ConfigurationParameters(startDate: startDate, endDate: endDate)
         return parameters

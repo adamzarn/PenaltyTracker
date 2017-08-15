@@ -27,11 +27,9 @@ class FirebaseClient: NSObject {
                         let state = eventObject.value(forKey: "state") as! String
                         let date = eventObject.value(forKey: "date") as! String
                         let createdDate = eventObject.value(forKey: "createdDate") as! String
-                        let startTime = eventObject.value(forKey: "startTime") as! String
-                        let endTime = eventObject.value(forKey: "endTime") as! String
                         let admin = eventObject.value(forKey: "admin") as! String
                         let adminName = eventObject.value(forKey: "adminName") as! String
-                        let event = Event(uid: key as! String, name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, startTime: startTime, endTime: endTime, admin: admin, adminName: adminName)
+                        let event = Event(uid: key as! String, name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, admin: admin, adminName: adminName)
                         events.append(event)
                     }
                     completion(events, nil)
@@ -67,7 +65,17 @@ class FirebaseClient: NSObject {
                         let submittedBy = penaltyObject.value(forKey: "submittedBy") as! String
                         let timeStamp = penaltyObject.value(forKey: "timeStamp") as! String
                         let checkedIn = penaltyObject.value(forKey: "checkedIn") as! Bool
-                        let newPenalty = Penalty(uid: key as! String, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy, timeStamp: timeStamp, checkedIn: checkedIn)
+                        let editedExists = penaltyObject.value(forKey: "edited") != nil
+                        var edited = false
+                        if editedExists {
+                            edited = penaltyObject.value(forKey: "edited") as! Bool
+                        }
+                        let editsExist = penaltyObject.value(forKey: "edits") != nil
+                        var edits: [String:String] = [:]
+                        if editsExist {
+                            edits = penaltyObject.value(forKey: "edits") as! [String:String]
+                        }
+                        let newPenalty = Penalty(uid: key as! String, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy, timeStamp: timeStamp, checkedIn: checkedIn, edited: edited, edits: edits)
                         penalties.append(newPenalty)
                         if checkedIn {
                             checkedInCount += 1
@@ -95,6 +103,8 @@ class FirebaseClient: NSObject {
                         bikes.append(value as! String)
                     }
                     bikes.sort { $0 < $1 }
+                    bikes.insert("", at: 0)
+                    bikes.append("Other")
                     
                     var colors: [String] = []
                     let colorsDict = dict.value(forKey: "Colors") as! NSDictionary
@@ -102,6 +112,8 @@ class FirebaseClient: NSObject {
                         colors.append(value as! String)
                     }
                     colors.sort { $0 < $1 }
+                    colors.insert("", at: 0)
+                    colors.append("Other")
                     
                     var penaltyTypes: [PenaltyType] = []
                     let penaltyTypesDict = dict.value(forKey: "PenaltyTypes") as! NSDictionary
@@ -112,6 +124,8 @@ class FirebaseClient: NSObject {
                         penaltyTypes.append(newPenaltyType)
                     }
                     penaltyTypes.sort { $0.name < $1.name }
+                    penaltyTypes.insert(PenaltyType(name:"",color:""), at: 0)
+                    penaltyTypes.append(PenaltyType(name:"Other",color:""))
                     
                     completion(bikes, colors, penaltyTypes, nil)
                 } else {

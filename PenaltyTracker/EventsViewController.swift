@@ -12,6 +12,8 @@ import Firebase
 class EventsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate, UISearchBarDelegate, UISearchControllerDelegate {
     
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
+    let defaults = UserDefaults.standard
+    var accessibleEvents: [String] = []
     
     var events: [Event] = []
     var filteredEvents: [Event] = []
@@ -194,7 +196,16 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if events[indexPath.row].admin == Auth.auth().currentUser?.uid {
+        
+        self.accessibleEvents = []
+        if let accessibleEvents = defaults.array(forKey: "accessibleEvents") {
+            self.accessibleEvents = accessibleEvents as! [String]
+            print(self.accessibleEvents)
+        }
+        
+        if (self.accessibleEvents).contains(events[indexPath.row].uid) {
+            accessEvent(row: indexPath.row)
+        } else if events[indexPath.row].admin == Auth.auth().currentUser?.uid {
             accessEvent(row: indexPath.row)
         } else {
             correctPin = events[indexPath.row].pin
@@ -209,6 +220,10 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     func accessEvent(row: Int) {
+        if !self.accessibleEvents.contains(events[row].uid) {
+            self.accessibleEvents.append(events[row].uid)
+        }
+        defaults.set(self.accessibleEvents, forKey: "accessibleEvents")
         prepareForTransition()
         let penaltiesVC = storyboard?.instantiateViewController(withIdentifier: "PenaltiesTableViewController") as! PenaltiesTableViewController
         penaltiesVC.event = events[row]
@@ -290,6 +305,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     
 
     @IBAction func submitPinButtonPressed(_ sender: Any) {
+
         let enteredPin = "\(pin1.text!)\(pin2.text!)\(pin3.text!)\(pin4.text!)"
         pin1.text = ""
         pin2.text = ""
@@ -301,6 +317,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
             pin1.becomeFirstResponder()
             displayAlert(title: "Incorrect PIN", message: "Contact this event's administrator for the PIN.")
         }
+            
     }
     
     @IBAction func cancelPinButtonPressed(_ sender: Any) {
