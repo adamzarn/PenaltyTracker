@@ -57,7 +57,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     var doneToolbar: UIToolbar!
     
     var genderPicker: UIPickerView!
-    var genders = ["", "Male", "Female"]
+    var genders = ["Gender", "Male", "Female"]
     
     var bikePicker: UIPickerView!
     var bikes: [String] = []
@@ -72,15 +72,26 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     var penaltyTypes: [PenaltyType] = []
     
     var bikeLengthsPicker: UIPickerView!
-    let bikeLengths = ["1","2","3","4","5"]
+    let bikeLengths = ["Bike Lengths","1","2","3","4","5"]
     
     var secondsPicker: UIPickerView!
-    var seconds = ["26","27","28","29","30","31","32","33","34","35","36","37","38",
+    var seconds = ["Seconds","26","27","28","29","30","31","32","33","34","35","36","37","38",
                    "39","40","41","42","43","44","45","46","47","48","49","50","51",
                    "52","53","54","55","56","57","58","59","60+"]
     
     var approximateMilePicker: UIPickerView!
-    let approximateMiles = Array(1...120)
+    let approximateMiles = ["Approximate Mile","1","2","3","4","5","6","7","8","9","10",
+                            "11","12","13","14","15","16","17","18","19","20",
+                            "21","22","23","24","25","26","27","28","29","30",
+                            "31","32","33","34","35","36","37","38","39","40",
+                            "41","42","43","44","45","46","47","48","49","50",
+                            "51","52","53","54","55","56","57","58","59","60",
+                            "61","62","63","64","65","66","67","68","69","70",
+                            "71","72","73","74","75","76","77","78","79","80",
+                            "81","82","83","84","85","86","87","88","89","90",
+                            "91","92","93","94","95","96","97","98","99","100",
+                            "101","102","103","104","105","106","107","108","109","110",
+                            "111","112","113","114","115","116","117","118","119","120"]
     
     var currentTextField: UITextField?
     
@@ -114,8 +125,11 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
                 self.aiv.stopAnimating()
                 if let bikes = bikes, let colors = colors, let penaltyTypes = penaltyTypes {
                     self.bikes = bikes
+                    self.bikes.insert("Bike Type", at: 0)
                     self.colors = colors
+                    self.colors.insert("Color", at: 0)
                     self.penaltyTypes = penaltyTypes
+                    self.penaltyTypes.insert(PenaltyType(name:"Penalty", color:""), at: 0)
                     self.setUpTextFields()
                 } else {
                     print("error")
@@ -322,9 +336,23 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         } else if pickerView == secondsPicker {
             title = seconds[row]
         } else {
+            if currentTextField == bikeColorTextField {
+                colors[0] = "Bike Color"
+            } else if currentTextField == helmetColorTextField {
+                colors[0] = "Helmet Color"
+            } else if currentTextField == topColorTextField {
+                colors[0] = "Top Color"
+            } else if currentTextField == pantColorTextField {
+                colors[0] = "Pant Color"
+            }
             title = colors[row]
         }
-        let myTitle = NSAttributedString(string: title, attributes: [NSFontAttributeName:UIFont.systemFont(ofSize: 32.0),NSForegroundColorAttributeName: UIColor.black])
+        var myTitle: NSAttributedString!
+        if row == 0 {
+            myTitle = NSAttributedString(string: title, attributes: [NSFontAttributeName:UIFont.boldSystemFont(ofSize: 32.0),NSForegroundColorAttributeName: UIColor.black])
+        } else {
+            myTitle = NSAttributedString(string: title, attributes: [NSFontAttributeName:UIFont.systemFont(ofSize: 32.0),NSForegroundColorAttributeName: UIColor.black])
+        }
         pickerLabel.attributedText = myTitle
         return pickerLabel
     }
@@ -334,6 +362,10 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        if row == 0 {
+            currentTextField?.text = ""
+            return
+        }
         if pickerView == genderPicker {
             currentTextField?.text = genders[row]
         } else if pickerView == bikePicker {

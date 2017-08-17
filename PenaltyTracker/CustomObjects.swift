@@ -291,3 +291,11 @@ struct Edit {
     }
     
 }
+
+
+class PinField: UITextField {
+    override func deleteBackward() {
+        super.deleteBackward()
+        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "deletePressed"), object: nil)
+    }
+}

@@ -17,7 +17,9 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
     var filteredPenalties: [Penalty] = []
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
     let defaults = UserDefaults.standard
+    var penaltiesCount = 0
     var checkedInCount = 0
+    var notCheckedInCount = 0
     var refreshControl: UIRefreshControl!
 
     @IBOutlet weak var penaltiesTableView: UITableView!
@@ -93,18 +95,22 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
                 self.aiv.isHidden = true
                 self.aiv.stopAnimating()
                 if error == "No Penalties Yet" {
+                    self.setSegmentedControlTitles()
                     self.penaltiesTableView.isHidden = false
                     self.penaltiesTableView.reloadData()
                     self.refreshControl.endRefreshing()
                     return
                 }
                 if let penalties = penalties, let checkedInCount = checkedInCount {
-                    self.checkedInCount = checkedInCount
                     self.penalties = penalties
+                    self.penaltiesCount = penalties.count
+                    self.checkedInCount = checkedInCount
+                    self.notCheckedInCount = penalties.count - checkedInCount
                     self.filterThenSortPenalties()
                     self.penaltiesTableView.isHidden = false
                     self.refreshControl.attributedTitle = NSAttributedString(string: "Last Updated: \(self.lastUpdatedTime())")
                     self.refreshControl.endRefreshing()
+                    self.setSegmentedControlTitles()
                 } else {
                     self.displayAlert(title: "Error", message: "Could not load penalties. Please try again.")
                 }
@@ -145,6 +151,12 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         } else {
             penalties.sort { Int($0.bibNumber)! < Int($1.bibNumber)! }
         }
+    }
+    
+    func setSegmentedControlTitles() {
+        self.penaltiesSegmentedControl.setTitle("All (\(penaltiesCount))", forSegmentAt: 0)
+        self.penaltiesSegmentedControl.setTitle("Checked In (\(checkedInCount))", forSegmentAt: 1)
+        self.penaltiesSegmentedControl.setTitle("Not Checked In (\(notCheckedInCount))", forSegmentAt: 2)
     }
     
     @IBAction func filterCriteronChanged(_ sender: Any) {
@@ -316,7 +328,7 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
         }
         if penaltiesSegmentedControl.selectedSegmentIndex == 0 {
             if penalties.count > 1 {
-                return "\(penalties.count) Penalties (\(checkedInCount)/\(penalties.count) Checked In)"
+                return "\(penalties.count) Penalties"
             } else if penalties.count == 1 {
                 return "1 Penalty (\(checkedInCount)/\(1) Checked In)"
             } else {

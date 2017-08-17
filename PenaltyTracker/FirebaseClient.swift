@@ -103,7 +103,6 @@ class FirebaseClient: NSObject {
                         bikes.append(value as! String)
                     }
                     bikes.sort { $0 < $1 }
-                    bikes.insert("", at: 0)
                     bikes.append("Other")
                     
                     var colors: [String] = []
@@ -112,7 +111,6 @@ class FirebaseClient: NSObject {
                         colors.append(value as! String)
                     }
                     colors.sort { $0 < $1 }
-                    colors.insert("", at: 0)
                     colors.append("Other")
                     
                     var penaltyTypes: [PenaltyType] = []
@@ -124,7 +122,6 @@ class FirebaseClient: NSObject {
                         penaltyTypes.append(newPenaltyType)
                     }
                     penaltyTypes.sort { $0.name < $1.name }
-                    penaltyTypes.insert(PenaltyType(name:"",color:""), at: 0)
                     penaltyTypes.append(PenaltyType(name:"Other",color:""))
                     
                     completion(bikes, colors, penaltyTypes, nil)

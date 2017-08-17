@@ -17,16 +17,18 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     @IBOutlet weak var nameTextField: UITextField!
     @IBOutlet weak var cityTextField: UITextField!
     @IBOutlet weak var stateTextField: UITextField!
-    @IBOutlet weak var pin1: UITextField!
-    @IBOutlet weak var pin2: UITextField!
-    @IBOutlet weak var pin3: UITextField!
-    @IBOutlet weak var pin4: UITextField!
+
+    @IBOutlet weak var pin1: PinField!
+    @IBOutlet weak var pin2: PinField!
+    @IBOutlet weak var pin3: PinField!
+    @IBOutlet weak var pin4: PinField!
+    
     @IBOutlet weak var submitButton: UIButton!
     
     var event: Event?
     
     var statePicker: UIPickerView!
-    let stateOptions = ["", "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
+    let stateOptions = ["State", "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
                         "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT",
                         "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
                         "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
@@ -113,11 +115,29 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(false)
         subscribeToKeyboardNotifications()
+        NotificationCenter.default.addObserver(self, selector: #selector(EventsViewController.deletePressed), name: NSNotification.Name(rawValue: "deletePressed"), object: nil)
+    }
+    
+    func deletePressed() {
+        if pin1.isFirstResponder {
+            pin1.text = ""
+        } else if pin2.isFirstResponder {
+            pin2.text = ""
+            pin1.becomeFirstResponder()
+        } else if pin3.isFirstResponder {
+            pin3.text = ""
+            pin2.becomeFirstResponder()
+        } else if pin4.isFirstResponder {
+            pin4.text = ""
+            pin3.becomeFirstResponder()
+            return
+        }
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillAppear(false)
         unsubscribeFromKeyboardNotifications()
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name(rawValue: "deletePressed"), object: nil)
     }
     
     func setUpHeader(from visibleDates: DateSegmentInfo) {
@@ -322,7 +342,12 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
         let pickerLabel = UILabel()
         pickerLabel.textAlignment = .center
         let title = stateOptions[row]
-        let myTitle = NSAttributedString(string: title, attributes: [NSFontAttributeName:UIFont.systemFont(ofSize: 32.0),NSForegroundColorAttributeName: UIColor.black])
+        var myTitle: NSAttributedString!
+        if row == 0 {
+            myTitle = NSAttributedString(string: title, attributes: [NSFontAttributeName:UIFont.boldSystemFont(ofSize: 32.0),NSForegroundColorAttributeName: UIColor.black])
+        } else {
+            myTitle = NSAttributedString(string: title, attributes: [NSFontAttributeName:UIFont.systemFont(ofSize: 32.0),NSForegroundColorAttributeName: UIColor.black])
+        }
         pickerLabel.attributedText = myTitle
         return pickerLabel
     }
@@ -332,7 +357,11 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
-        stateTextField.text = stateOptions[row]
+        if row == 0 {
+            stateTextField.text = ""
+        } else {
+            stateTextField.text = stateOptions[row]
+        }
     }
     
 }
