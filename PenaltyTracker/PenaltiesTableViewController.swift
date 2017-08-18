@@ -261,7 +261,14 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         if let event = event {
             let name = event.name
             let date = formatDate(from: event.date)
-            let segment = penaltiesSegmentedControl.titleForSegment(at: penaltiesSegmentedControl.selectedSegmentIndex)!
+            var segment = ""
+            if penaltiesSegmentedControl.selectedSegmentIndex == 0 {
+                segment = "All"
+            } else if penaltiesSegmentedControl.selectedSegmentIndex == 1 {
+                segment = "Checked In"
+            } else {
+                segment = "Not Checked In"
+            }
             
             let header = "Checked In,Bib Number,Penalty,Bike Lengths,Seconds,Approximate Mile,Gender,Bike Type,Bike Color,Helmet Color,Top Color,Pant Color,Submitted By,Time Submitted,Notes"
 
@@ -308,7 +315,7 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
     
     func formatDate(from date: String) -> String {
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "M/d/yy"
+        dateFormatter.dateFormat = "yyyyMMdd HH:mm:ss:SSS"
         let dateDate = dateFormatter.date(from: date)
         dateFormatter.dateFormat = "yyyyMMdd"
         return dateFormatter.string(from: dateDate!)
@@ -330,7 +337,7 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
             if penalties.count > 1 {
                 return "\(penalties.count) Penalties"
             } else if penalties.count == 1 {
-                return "1 Penalty (\(checkedInCount)/\(1) Checked In)"
+                return "1 Penalty"
             } else {
                 return "0 Penalties"
             }

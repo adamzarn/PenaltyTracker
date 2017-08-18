@@ -52,7 +52,7 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
             self.setUpHeader(from: visibleDates)
             if let event = self.event {
                 let formatter = DateFormatter()
-                formatter.dateFormat = "M/d/yy"
+                formatter.dateFormat = "yyyyMMdd HH:mm:ss:SSS"
                 let date = formatter.date(from: event.date)
                 self.calendarView.scrollToDate(date!)
             }
@@ -106,7 +106,7 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
     
     func selectDate(of event: Event) {
         let formatter = DateFormatter()
-        formatter.dateFormat = "M/d/yy"
+        formatter.dateFormat = "yyyyMMdd HH:mm:ss:SSS"
         let date = formatter.date(from: event.date)
         self.calendarView.selectDates([date!])
         self.calendarView.reloadData()
@@ -190,7 +190,14 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
             existingEventUid = existingEvent.uid
         }
         
-        let event = Event(uid: existingEventUid, name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, admin: admin!, adminName: adminName!)
+        let newEvent = Event(uid: existingEventUid, name: name, pin: pin, city: city, state: state, date: date, createdDate: createdDate, admin: admin!, adminName: adminName!)
+        
+        if let existingEvent = self.event {
+            if existingEvent == newEvent {
+                displayAlert(title: "No changes made.", message: "There are no changes to submit.")
+                return
+            }
+        }
         
         let message = "Does everything look correct? \n\n Event: \(name) \n Location: \(city), \(state) \n Date: \(GlobalFunctions.shared.formattedTimestamp(ts: date, includeDate: true, includeTime: false)) \n PIN: \(pin) \n Created by: \(adminName!)"
         
@@ -200,32 +207,36 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
             
             if GlobalFunctions.shared.hasConnectivity() {
             
-                FirebaseClient.shared.createEvent(uid: existingEventUid, event: event) { (success, message) -> () in
+                FirebaseClient.shared.createEvent(uid: existingEventUid, event: newEvent) { (success, message) -> () in
                     if let success = success, let message = message {
                         if success {
+                            self.event = newEvent
+                            let penaltiesTableVC = self.navigationController?.viewControllers[1] as! PenaltiesTableViewController
+                            penaltiesTableVC.event = newEvent
                             let alert = UIAlertController(title: "Success!", message: message as String,  preferredStyle: .alert)
-                            alert.addAction(UIAlertAction(title: "Sure", style: .default) { (_) in
-                                self.nameTextField.text = ""
-                                self.cityTextField.text = ""
-                                self.stateTextField.text = ""
-                                self.calendarView.deselectAllDates()
-                                self.pin1.text = ""
-                                self.pin2.text = ""
-                                self.pin3.text = ""
-                                self.pin4.text = ""
-                                let selectRecipientsVC = self.storyboard?.instantiateViewController(withIdentifier: "SelectRecipientsViewController") as! SelectRecipientsViewController
-                                selectRecipientsVC.subject = "PenaltyTracker Event Invite"
-                                selectRecipientsVC.emailBody = "Hello,\nYou've been invited to officiate an event called \"\(event.name)\" with PenaltyTracker. Follow the steps below to get started.\n\n1. Open/Download the PenaltyTracker App.\n2. Create an account or login.\n3. Search for \"\(event.name)\" in the events page and select it.\n4. When asked to enter a PIN, enter \(event.pin).\n\nThat's it. We hope you enjoy issuing penalties with PenaltyTracker!"
-                                self.navigationController?.pushViewController(selectRecipientsVC, animated: false)
-                            })
-                            alert.addAction(UIAlertAction(title: "Not right now", style: .default) { (_) in
-                                if existingEventUid == "" {
-                                    self.navigationController?.popToRootViewController(animated: true)
-                                } else {
-                                    let penaltiesTableVC = self.navigationController?.viewControllers[1] as! PenaltiesTableViewController
-                                    penaltiesTableVC.event = event
-                                }
-                            })
+                            if existingEventUid == "" {
+                                alert.addAction(UIAlertAction(title: "Sure", style: .default) { (_) in
+                                    self.nameTextField.text = ""
+                                    self.cityTextField.text = ""
+                                    self.stateTextField.text = ""
+                                    self.calendarView.deselectAllDates()
+                                    self.pin1.text = ""
+                                    self.pin2.text = ""
+                                    self.pin3.text = ""
+                                    self.pin4.text = ""
+                                    let selectRecipientsVC = self.storyboard?.instantiateViewController(withIdentifier: "SelectRecipientsViewController") as! SelectRecipientsViewController
+                                    selectRecipientsVC.subject = "PenaltyTracker Event Invite"
+                                    selectRecipientsVC.emailBody = "Hello,\nYou've been invited to officiate an event called \"\(newEvent.name)\" with LifeTime Fitness Penalty Tracker. Follow the steps below to get started.\n\n1. Open/Download the LifeTime Fitness Penalty Tracker App.\n2. Create an account or login.\n3. Search for \"\(newEvent.name)\" in the events page and select it.\n4. When asked to enter a PIN, enter \(newEvent.pin).\n\nThat's it. We hope you enjoy issuing penalties with LifeTime Fitness Penalty Tracker!"
+                                    self.navigationController?.pushViewController(selectRecipientsVC, animated: false)
+                                })
+                                alert.addAction(UIAlertAction(title: "Not right now", style: .default) { (_) in
+                                    if existingEventUid == "" {
+                                        self.navigationController?.popToRootViewController(animated: true)
+                                    }
+                                })
+                            } else {
+                                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                            }
                             self.present(alert, animated: false, completion: nil)
                         } else {
                             self.displayAlert(title: "Error", message: "We were unable to complete your request. Please try again.")
@@ -409,7 +420,6 @@ extension CreateEventViewController: JTAppleCalendarViewDelegate, JTAppleCalenda
         }
         
         if cellState.isSelected && cellState.dateBelongsTo == .thisMonth {
-            print(date)
             cell.selectedView.isHidden = false
         } else {
             cell.selectedView.isHidden = true

@@ -23,7 +23,7 @@ struct User {
     
 }
 
-struct Event {
+struct Event: Equatable {
     
     let uid: String
     let name: String
@@ -56,6 +56,15 @@ struct Event {
                 "createdDate": createdDate,
                 "admin": admin,
                 "adminName": adminName] as AnyObject
+    }
+    
+    public static func ==(old: Event, new: Event) -> Bool {
+        return
+            old.name == new.name &&
+                old.city == new.city &&
+                old.state == new.state &&
+                old.date == new.date &&
+                old.pin == new.pin
     }
     
 }
