@@ -191,12 +191,12 @@ class EventCell: UITableViewCell {
     
     func setUpCell(event: Event) {
         
-        eventNameLabel.attributedText = GlobalFunctions.shared.bold(string: event.name, size: 14.0, color: .black)
+        eventNameLabel.attributedText = GlobalFunctions.shared.bold(string: event.name, size: 16.0, color: .black)
         
-        locationLabel.attributedText = GlobalFunctions.shared.italic(string: event.city + ", " + event.state, size: 14.0, color: .black)
+        locationLabel.attributedText = GlobalFunctions.shared.italic(string: event.city + ", " + event.state, size: 16.0, color: .black)
         
         let formattedDate = GlobalFunctions.shared.formattedTimestamp(ts: event.date, includeDate: true, includeTime: false)
-        dateLabel.attributedText = GlobalFunctions.shared.bold(string: formattedDate, size: 14.0, color: appDelegate.darkBlueColor)
+        dateLabel.attributedText = GlobalFunctions.shared.bold(string: formattedDate, size: 16.0, color: appDelegate.darkBlueColor)
         
         createdByLabel.text = "Created by \(event.adminName) on \(GlobalFunctions.shared.formattedTimestamp(ts:event.createdDate, includeDate: true, includeTime: false))"
         createdByLabel.textColor = .lightGray

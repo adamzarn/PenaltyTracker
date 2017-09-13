@@ -20,12 +20,14 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
 
     @IBOutlet weak var enterPinView: UIView!
     var dimView: UIView?
+    @IBOutlet weak var forEventNameLabel: UILabel!
     @IBOutlet weak var pin1: PinField!
     @IBOutlet weak var pin2: PinField!
     @IBOutlet weak var pin3: PinField!
     @IBOutlet weak var pin4: PinField!
     @IBOutlet weak var submitPinButton: UIButton!
     @IBOutlet weak var cancelPinButton: UIButton!
+    
     
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     @IBOutlet weak var loadingLabel: UILabel!
@@ -220,15 +222,22 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
         self.accessibleEvents = []
         if let accessibleEvents = defaults.array(forKey: "accessibleEvents") {
             self.accessibleEvents = accessibleEvents as! [String]
-            print(self.accessibleEvents)
         }
         
-        if (self.accessibleEvents).contains(events[indexPath.row].uid) {
+        var selectedEvent: Event!
+        if searchController.isActive {
+            selectedEvent = filteredEvents[indexPath.row]
+        } else {
+            selectedEvent = events[indexPath.row]
+        }
+        
+        if (self.accessibleEvents).contains(selectedEvent.uid) {
             accessEvent(row: indexPath.row)
-        } else if events[indexPath.row].admin == Auth.auth().currentUser?.uid {
+        } else if selectedEvent.admin == Auth.auth().currentUser?.uid {
             accessEvent(row: indexPath.row)
         } else {
-            correctPin = events[indexPath.row].pin
+            correctPin = selectedEvent.pin
+            forEventNameLabel.text = "for \(selectedEvent.name)"
             eventRow = indexPath.row
             pin1.becomeFirstResponder()
             tableView.deselectRow(at: indexPath, animated: false)
@@ -244,9 +253,13 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
             self.accessibleEvents.append(events[row].uid)
         }
         defaults.set(self.accessibleEvents, forKey: "accessibleEvents")
-        prepareForTransition()
         let penaltiesVC = storyboard?.instantiateViewController(withIdentifier: "PenaltiesTableViewController") as! PenaltiesTableViewController
-        penaltiesVC.event = events[row]
+        if searchController.isActive {
+            penaltiesVC.event = filteredEvents[row]
+        } else {
+            penaltiesVC.event = events[row]
+        }
+        prepareForTransition()
         self.navigationController?.pushViewController(penaltiesVC, animated: true)
     }
     
@@ -327,10 +340,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     @IBAction func submitPinButtonPressed(_ sender: Any) {
 
         let enteredPin = "\(pin1.text!)\(pin2.text!)\(pin3.text!)\(pin4.text!)"
-        pin1.text = ""
-        pin2.text = ""
-        pin3.text = ""
-        pin4.text = ""
+        clearPinEntries()
         if enteredPin == correctPin! {
             accessEvent(row: eventRow!)
         } else {
@@ -341,7 +351,15 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     @IBAction func cancelPinButtonPressed(_ sender: Any) {
+        clearPinEntries()
         dismissEnterPinView()
+    }
+    
+    func clearPinEntries() {
+        pin1.text = ""
+        pin2.text = ""
+        pin3.text = ""
+        pin4.text = ""
     }
     
     func dismissEnterPinView() {

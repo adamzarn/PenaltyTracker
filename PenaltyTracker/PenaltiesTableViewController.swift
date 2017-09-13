@@ -285,8 +285,6 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
                     note = note + line
                 }
                 
-                print(p.notes.characters.split{$0 == "\n"}.map(String.init))
-                
                 csvString = "\(csvString)\n\(checkedInString),\(p.bibNumber),\(p.penalty),\(p.bikeLengths),\(p.seconds),\(p.approximateMile),\(p.gender),\(p.bikeType),\(p.bikeColor),\(p.helmetColor),\(p.topColor),\(p.pantColor),\(p.submittedBy),\(p.timeStamp),\(note)"
             }
             

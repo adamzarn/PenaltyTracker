@@ -93,6 +93,8 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
                             "101","102","103","104","105","106","107","108","109","110",
                             "111","112","113","114","115","116","117","118","119","120"]
     
+    var pickers: [UIPickerView]!
+    
     var currentTextField: UITextField?
     
     let screenWidth = UIScreen.main.bounds.width
@@ -178,6 +180,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(false)
         subscribeToKeyboardNotifications()
+        pickers = [genderPicker, bikePicker, bikeColorPicker, helmetColorPicker, topColorPicker, pantColorPicker,penaltyTypePicker, bikeLengthsPicker, secondsPicker, approximateMilePicker]
     }
     
     override func viewDidDisappear(_ animated: Bool) {
@@ -186,11 +189,16 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     }
     
     override func viewWillAppear(_ animated: Bool) {
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(LogPenaltyViewController.orientationChanged), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
+        
         self.scrollView.contentSize = CGSize(width: self.view.frame.size.width, height: self.contentView.frame.size.height)
         
         scrollView.isScrollEnabled = true
-        print(scrollView.frame.size.height)
-        print(contentView.frame.size.height)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        NotificationCenter.default.removeObserver(NSNotification.Name.UIDeviceOrientationDidChange)
     }
     
     func setUpTextFields() {
@@ -232,6 +240,20 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
         
         notesTextView.inputAccessoryView = doneToolbar
         
+    }
+    
+    func orientationChanged() {
+        if UIDevice.current.orientation.isPortrait {
+            updatePickerWidths(width: screenWidth)
+        } else {
+            updatePickerWidths(width: screenHeight)
+        }
+    }
+    
+    func updatePickerWidths(width: CGFloat) {
+        for picker in pickers {
+            picker.frame.size.width = width
+        }
     }
     
     func createPicker() -> UIPickerView {
@@ -284,7 +306,11 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UIPickerV
     }
     
     func keyboardWillHide(notification: Notification) {
-        view.frame.origin.y = navBarHeight
+        if UIDevice.current.orientation.isPortrait {
+            view.frame.origin.y = navBarHeight
+        } else {
+            view.frame.origin.y = navBarHeight/2
+        }
     }
     
     func getKeyboardHeight(notification: Notification) -> CGFloat {
