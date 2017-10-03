@@ -75,7 +75,14 @@ class FirebaseClient: NSObject {
                         if editsExist {
                             edits = penaltyObject.value(forKey: "edits") as! [String:String]
                         }
-                        let newPenalty = Penalty(uid: key as! String, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy, timeStamp: timeStamp, checkedIn: checkedIn, edited: edited, edits: edits)
+                        let coordinatesExist = penaltyObject.value(forKey: "lat") != nil
+                        var lat = ""
+                        var long = ""
+                        if coordinatesExist {
+                            lat = penaltyObject.value(forKey: "lat") as! String
+                            long = penaltyObject.value(forKey: "long") as! String
+                        }
+                        let newPenalty = Penalty(uid: key as! String, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy, timeStamp: timeStamp, checkedIn: checkedIn, edited: edited, edits: edits, lat: lat, long: long)
                         penalties.append(newPenalty)
                         if checkedIn {
                             checkedInCount += 1

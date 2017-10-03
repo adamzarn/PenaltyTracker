@@ -9,6 +9,9 @@
 import UIKit
 import Firebase
 
+//TODO Take a picture of athlete.
+//TODO Record video or soundbyte.
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 

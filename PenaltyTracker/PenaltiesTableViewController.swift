@@ -402,14 +402,14 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
         let penaltyDetails = UIAlertController(title: "Penalty Details", message: message, preferredStyle: .alert)
         
         let closeAction = UIAlertAction(title: "Close", style: .cancel) { (_) in }
-        let editAction = UIAlertAction(title: "Edit", style: .default) { (_) in
+        let reviewAction = UIAlertAction(title: "Review", style: .default) { (_) in
             let logPenaltyVC = self.storyboard?.instantiateViewController(withIdentifier: "LogPenaltyViewController") as! LogPenaltyViewController
             logPenaltyVC.eventID = self.event?.uid
             logPenaltyVC.penalty = penalty
             self.navigationController?.pushViewController(logPenaltyVC, animated: true)
         }
         
-        penaltyDetails.addAction(editAction)
+        penaltyDetails.addAction(reviewAction)
         penaltyDetails.addAction(closeAction)
         
         self.present(penaltyDetails, animated: false, completion: nil)
@@ -417,7 +417,7 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 80.0
+        return 90.0
     }
     
     func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {

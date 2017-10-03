@@ -101,8 +101,10 @@ struct Penalty: Equatable {
     var checkedIn: Bool
     var edited: Bool
     var edits: [String: String]
+    var lat: String
+    var long: String
     
-    init(uid: String, bibNumber: String, gender: String, bikeType: String, bikeColor: String, helmetColor: String, topColor: String, pantColor: String, penalty: String, bikeLengths: String, seconds: String, approximateMile: String, notes: String, submittedBy: String, timeStamp: String, checkedIn: Bool, edited: Bool, edits: [String: String]) {
+    init(uid: String, bibNumber: String, gender: String, bikeType: String, bikeColor: String, helmetColor: String, topColor: String, pantColor: String, penalty: String, bikeLengths: String, seconds: String, approximateMile: String, notes: String, submittedBy: String, timeStamp: String, checkedIn: Bool, edited: Bool, edits: [String: String], lat: String, long: String) {
         self.uid = uid
         self.bibNumber = bibNumber
         self.gender = gender
@@ -121,6 +123,8 @@ struct Penalty: Equatable {
         self.checkedIn = checkedIn
         self.edited = edited
         self.edits = edits
+        self.lat = lat
+        self.long = long
     }
     
     func toAnyObject() -> AnyObject {
@@ -140,7 +144,9 @@ struct Penalty: Equatable {
                 "timeStamp": timeStamp,
                 "checkedIn": false,
                 "edited": edited,
-                "edits": edits] as AnyObject
+                "edits": edits,
+                "lat": lat,
+                "long": long] as AnyObject
     }
     
     public static func ==(old: Penalty, new: Penalty) -> Bool {
