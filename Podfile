@@ -8,9 +8,11 @@ target 'PenaltyTracker' do
   # Pods for PenaltyTracker
 
  	pod 'Firebase/Core'
-    	pod 'Firebase/Database'
-    	pod 'Firebase/Auth'
+    pod 'Firebase/Database'
+    pod 'Firebase/Auth'
+    pod 'Firebase/Storage'
 	pod 'JTAppleCalendar', '~> 7.0'
+    pod 'AlamofireImage', '~> 3.1'
 
   target 'PenaltyTrackerTests' do
     inherit! :search_paths

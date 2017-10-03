@@ -10,8 +10,9 @@ import UIKit
 import Firebase
 import CoreLocation
 import MapKit
+import Darwin
 
-class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextViewDelegate, UIScrollViewDelegate, MKMapViewDelegate, CLLocationManagerDelegate {
+class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextViewDelegate, UIScrollViewDelegate, MKMapViewDelegate, CLLocationManagerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     
     var locationManager: CLLocationManager!
     var location: CLLocation! {
@@ -34,8 +35,31 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        location = locations.last
-        locationManager.stopUpdatingLocation()
+        var distanceTraveled: Double?
+        if let plottedLocation = location, let newLocation = locations.last {
+            let lat1 = plottedLocation.coordinate.latitude as Double
+            let long1 = plottedLocation.coordinate.longitude as Double
+            let lat2 = newLocation.coordinate.latitude as Double
+            let long2 = newLocation.coordinate.longitude as Double
+            let latDelta = lat2-lat1
+            let longDelta = long2-long1
+            distanceTraveled = sqrt(pow(latDelta, 2) + pow(longDelta, 2))
+            print(distanceTraveled!)
+            if let distanceTraveled = distanceTraveled {
+                if distanceTraveled > 0.0001 {
+                    location = locations.last
+                    dropPin(lat: location.coordinate.latitude, long: location.coordinate.longitude)
+                }
+            }
+        } else {
+            location = locations.last
+            dropPin(lat: location.coordinate.latitude, long: location.coordinate.longitude)
+        }
+        
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print(error.localizedDescription)
     }
 
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
@@ -44,7 +68,10 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     var navBarHeight: CGFloat!
     var edits: [Edit] = []
     var options: [String] = []
-
+    var profilePhotoImageData: Data?
+    var appearingAfterImagePicker = false
+    var shouldUpdatePhoto = false
+    
     @IBOutlet weak var scrollView: UIScrollView!
     @IBOutlet weak var contentView: UIView!
     @IBOutlet weak var selectionView: UIView!
@@ -57,7 +84,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
 
     @IBOutlet weak var appearanceLabel: UILabel!
 
-    @IBOutlet weak var profilePhoto: UIImageView!
+    @IBOutlet weak var profilePhoto: UIButton!
     
     @IBOutlet weak var bikeTypeTextField: UITextField!
     @IBOutlet weak var bikeColorTextField: UITextField!
@@ -135,13 +162,15 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         bikeLengthsTextField.isEnabled = false
         secondsTextField.isEnabled = false
 
-        cardView.layer.borderWidth = 1
+        cardView.layer.borderWidth = 0.25
         cardView.layer.borderColor = UIColor.lightGray.cgColor
-        cardView.layer.cornerRadius = 5
+        cardView.layer.cornerRadius = 5.00
 
-        notesTextView.layer.borderWidth = 1
+        notesTextView.layer.borderWidth = 0.25
         notesTextView.layer.borderColor = UIColor.lightGray.cgColor
-        notesTextView.layer.cornerRadius = 5
+        notesTextView.layer.cornerRadius = 5.00
+        
+        myMapView.layer.cornerRadius = 5.00
 
         aiv.isHidden = false
         aiv.startAnimating()
@@ -172,34 +201,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         } else {
             self.displayAlert(title: "No Internet Connectivity", message: "Establish an Internet Connection and try again.")
         }
-
-        if let penalty = penalty {
-            bibNumberTextField.text = penalty.bibNumber
-            genderTextField.text = penalty.gender
-            bikeTypeTextField.text = penalty.bikeType
-            bikeColorTextField.text = penalty.bikeColor
-            helmetColorTextField.text = penalty.helmetColor
-            topColorTextField.text = penalty.topColor
-            pantColorTextField.text = penalty.pantColor
-            penaltyTextField.text = penalty.penalty
-            bikeLengthsTextField.text = penalty.bikeLengths
-            secondsTextField.text = penalty.seconds
-            approximateMileTextField.text = penalty.approximateMile
-            notesTextView.text = penalty.notes
-            if ["Blatant Littering", "Drafting"].contains(penalty.penalty) {
-                cardView.backgroundColor = appDelegate.darkBlueColor
-                cardLabel.text = "Blue Card"
-                cardLabel.textColor = .white
-            } else {
-                cardView.backgroundColor = appDelegate.yellowColor
-                cardLabel.text = "Yellow Card"
-                cardLabel.textColor = .black
-            }
-            let editsDict = penalty.edits
-            updateEditsArray(existingEdits: editsDict)
-            submitButton.title = "SUBMIT CHANGES"
-        }
-
+        
         appearanceLabel.textColor = appDelegate.darkBlueColor
         penaltyLabel.textColor = appDelegate.darkBlueColor
         notesLabel.textColor = appDelegate.darkBlueColor
@@ -213,9 +215,17 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         selectionView.isHidden = true
         selectionView.isUserInteractionEnabled = false
         
-        profilePhoto.layer.cornerRadius = 4
-        profilePhoto.layer.borderWidth = 1
+        profilePhoto.layer.cornerRadius = 5.0
+        profilePhoto.layer.borderWidth = 0.25
         profilePhoto.layer.borderColor = UIColor.lightGray.cgColor
+        profilePhoto.imageView?.layer.cornerRadius = 5.0
+        profilePhoto.imageView?.contentMode = .scaleAspectFill
+        
+        if let profilePhotoImageData = profilePhotoImageData {
+            profilePhoto.setImage(UIImage(data: profilePhotoImageData), for: .normal)
+        } else {
+            profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
+        }
 
     }
     
@@ -252,7 +262,41 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         }
 
     }
-
+    
+    func populateView(penalty: Penalty) {
+        bibNumberTextField.text = penalty.bibNumber
+        genderTextField.text = penalty.gender
+        bikeTypeTextField.text = penalty.bikeType
+        bikeColorTextField.text = penalty.bikeColor
+        helmetColorTextField.text = penalty.helmetColor
+        topColorTextField.text = penalty.topColor
+        pantColorTextField.text = penalty.pantColor
+        penaltyTextField.text = penalty.penalty
+        bikeLengthsTextField.text = penalty.bikeLengths
+        secondsTextField.text = penalty.seconds
+        approximateMileTextField.text = penalty.approximateMile
+        notesTextView.text = penalty.notes
+        if ["Blatant Littering", "Drafting"].contains(penalty.penalty) {
+            cardView.backgroundColor = appDelegate.darkBlueColor
+            cardLabel.text = "Blue Card"
+            cardLabel.textColor = .white
+        } else {
+            cardView.backgroundColor = appDelegate.yellowColor
+            cardLabel.text = "Yellow Card"
+            cardLabel.textColor = .black
+        }
+        let editsDict = penalty.edits
+        updateEditsArray(existingEdits: editsDict)
+        submitButton.title = "SUBMIT CHANGES"
+        
+        self.profilePhoto.setImage(UIImage(data: Data()), for: .normal)
+        FirebaseClient.shared.getProfilePhoto(eventID: eventID!, penaltyID: penalty.uid) { (image) -> () in
+            if let image = image {
+                self.profilePhoto.setImage(image, for: .normal)
+            }
+        }
+    }
+    
     override func viewWillAppear(_ animated: Bool) {
 
         //NotificationCenter.default.addObserver(self, selector: #selector(LogPenaltyViewController.orientationChanged), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
@@ -260,12 +304,23 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         self.scrollView.contentSize = CGSize(width: self.view.frame.size.width, height: self.contentView.frame.size.height)
 
         scrollView.isScrollEnabled = true
-
+        
         myMapView.removeAnnotations(myMapView.annotations)
-
-        if penalty != nil {
-            self.title = "Review Penalty"
+        
+        if appearingAfterImagePicker {
+            if let location = location {
+                dropPin(lat: location.coordinate.latitude, long: location.coordinate.longitude)
+            }
+        } else {
+            shouldUpdatePhoto = false
         }
+        appearingAfterImagePicker = false
+        
+        if let penalty = penalty {
+            self.title = "Review Penalty"
+            populateView(penalty: penalty)
+        }
+        
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -273,6 +328,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     }
 
     func dropPin(lat: Double, long: Double) {
+        myMapView.removeAnnotations(myMapView.annotations)
         let annotation = MKPointAnnotation()
         annotation.coordinate = CLLocationCoordinate2D(latitude: lat, longitude: long)
         myMapView.addAnnotation(annotation)
@@ -498,7 +554,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                 newPenalty.edited = true
             }
             if GlobalFunctions.shared.hasConnectivity() {
-                FirebaseClient.shared.postPenalty(eventID: (self.eventID)!, penaltyID: existingPenaltyUid, penalty: newPenalty) { (success, message) -> () in
+                FirebaseClient.shared.postPenalty(eventID: (self.eventID)!, penaltyID: existingPenaltyUid, penalty: newPenalty, profilePhoto: self.profilePhotoImageData!, shouldUpdatePhoto: self.shouldUpdatePhoto) { (success, message) -> () in
                     if let success = success, let message = message {
                         if success {
                             let alert = UIAlertController(title: "Success!", message: message as String, preferredStyle: .alert)
@@ -559,7 +615,51 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
             myMapView.centerCoordinate = CLLocationCoordinate2D(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
         }
     }
-
+    
+    @IBAction func addProfilePhoto(_ sender: Any) {
+        let picker = UIImagePickerController()
+        picker.delegate = self
+        picker.allowsEditing = true
+        
+        let sourceTypeAlert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        sourceTypeAlert.addAction(UIAlertAction(title: "Take Photo", style: .default, handler: { (action) in
+            picker.sourceType = UIImagePickerControllerSourceType.camera
+            self.present(picker, animated: true, completion: nil)
+        }))
+        sourceTypeAlert.addAction(UIAlertAction(title: "Choose Photo", style: .default, handler: { (action) in
+            picker.sourceType = UIImagePickerControllerSourceType.photoLibrary
+            self.present(picker, animated: true, completion: nil)
+        }))
+        if profilePhotoImageData != nil {
+            sourceTypeAlert.addAction(UIAlertAction(title: "Remove Current Photo", style: .default, handler: { (action) in
+                self.profilePhotoImageData = nil
+                if self.genderTextField.text == "Female" {
+                    self.profilePhoto.setImage(UIImage(named: "Girl.png"), for: .normal)
+                } else {
+                    self.profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
+                }
+            }))
+        }
+        
+        self.present(sourceTypeAlert, animated: true, completion: nil)
+        
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        appearingAfterImagePicker = true
+        picker.dismiss(animated: true, completion: nil)
+    }
+    
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+        appearingAfterImagePicker = true
+        picker.dismiss(animated: true, completion: nil)
+        let image = info[UIImagePickerControllerOriginalImage] as! UIImage
+        
+        profilePhotoImageData = UIImageJPEGRepresentation(image, 0.0)
+        shouldUpdatePhoto = true
+        profilePhoto.setImage(UIImage(data: profilePhotoImageData!), for: .normal)
+        
+    }
 
 }
 
@@ -632,10 +732,12 @@ extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
             }
             
             if currentTextField == genderTextField {
-                if options[indexPath.row] == "Female" {
-                    profilePhoto.image = UIImage(named: "Girl.png")
-                } else {
-                    profilePhoto.image = UIImage(named: "Boy.png")
+                if profilePhotoImageData == nil {
+                    if options[indexPath.row] == "Female" {
+                        profilePhoto.setImage(UIImage(named: "Girl.png"), for: .normal)
+                    } else {
+                        profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
+                    }
                 }
             }
             

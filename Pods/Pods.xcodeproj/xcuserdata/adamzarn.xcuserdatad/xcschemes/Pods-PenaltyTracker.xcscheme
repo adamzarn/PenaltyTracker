@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "DC6A0934C023B98759143686FF124A63"
+               BlueprintIdentifier = "4AF02ED67F8E190CCB0ECD850F5FCD1C"
                BuildableName = "Pods_PenaltyTracker.framework"
                BlueprintName = "Pods-PenaltyTracker"
                ReferencedContainer = "container:Pods.xcodeproj">
@@ -26,6 +26,7 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      language = ""
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
       </Testables>
@@ -36,6 +37,7 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      language = ""
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -45,7 +47,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DC6A0934C023B98759143686FF124A63"
+            BlueprintIdentifier = "4AF02ED67F8E190CCB0ECD850F5FCD1C"
             BuildableName = "Pods_PenaltyTracker.framework"
             BlueprintName = "Pods-PenaltyTracker"
             ReferencedContainer = "container:Pods.xcodeproj">

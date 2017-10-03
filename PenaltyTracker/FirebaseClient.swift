@@ -8,10 +8,14 @@
 
 import UIKit
 import Firebase
+import FirebaseStorage
+import Alamofire
+import AlamofireImage
 
 class FirebaseClient: NSObject {
     
     let ref = Database.database().reference()
+    let storageRef = Storage.storage().reference()
     let appDelegate = UIApplication.shared.delegate as! AppDelegate
     
     func getEvents(completion: @escaping (_ events: [Event]?, _ error: NSString?) -> ()) {
@@ -184,22 +188,52 @@ class FirebaseClient: NSObject {
         }
     }
     
-    func postPenalty(eventID: String, penaltyID: String, penalty: Penalty, completion: @escaping (_ success: Bool?, _ message: NSString?) -> ()) {
+    func postPenalty(eventID: String, penaltyID: String, penalty: Penalty,
+                     profilePhoto: Data, shouldUpdatePhoto: Bool,
+                     completion: @escaping (_ success: Bool?, _ message: NSString?) -> ()) {
         var penaltyRef: DatabaseReference!
+        var successMessage: NSString!
         if penaltyID == "" {
             penaltyRef = self.ref.child("Penalties").child(eventID).childByAutoId()
+            successMessage = "The penalty was successfully logged. We'll take you back to the Penalties list now."
         } else {
             penaltyRef = self.ref.child("Penalties").child(eventID).child(penaltyID)
+            successMessage = "The penalty was successfully edited."
         }
+        let imageRef = self.storageRef.child(eventID).child(penaltyRef.key).child("profilePhoto")
         penaltyRef.setValue(penalty.toAnyObject()) { (error, ref) -> Void in
             if error != nil {
                 completion(false, "Error")
             } else {
-                if penaltyID == "" {
-                    completion(true, "The penalty was successfully logged. We'll take you back to the Penalties list now.")
+                if shouldUpdatePhoto {
+                    imageRef.putData(profilePhoto, metadata: nil) { (metadata, error) in
+                        guard metadata != nil else {
+                            completion(false, "Error")
+                            return
+                        }
+                        completion(true, successMessage)
+                    }
                 } else {
-                    completion(true, "The penalty was successfully edited.")
+                    completion(true, successMessage)
                 }
+            }
+        }
+    }
+    
+    func getProfilePhoto(eventID: String, penaltyID: String, completion: @escaping (_ image: UIImage?) -> ()) {
+        let imageRef = self.storageRef.child(eventID).child(penaltyID).child("profilePhoto")
+        imageRef.getMetadata { (metadata, error) -> () in
+            if let metadata = metadata {
+                let downloadUrl = metadata.downloadURL()
+                Alamofire.request(downloadUrl!, method: .get).responseImage { response in
+                    guard let image = response.result.value else {
+                        completion(nil)
+                        return
+                    }
+                    completion(image)
+                }
+            } else {
+                completion(nil)
             }
         }
     }
