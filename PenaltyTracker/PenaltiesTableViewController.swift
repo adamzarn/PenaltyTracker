@@ -21,7 +21,9 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
     var checkedInCount = 0
     var notCheckedInCount = 0
     var refreshControl: UIRefreshControl!
-
+    var tableViewShrunk = false
+    @IBOutlet weak var myToolbar: UIToolbar!
+    
     @IBOutlet weak var penaltiesTableView: UITableView!
     @IBOutlet weak var navItem: UINavigationItem!
     @IBOutlet weak var editButton: UIBarButtonItem!
@@ -75,6 +77,7 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
     }
     
     override func viewWillAppear(_ animated: Bool) {
+        subscribeToKeyboardNotifications()
         penaltiesTableView.isHidden = true
         aiv.isHidden = false
         aiv.startAnimating()
@@ -85,6 +88,10 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         
         penaltiesTableView.setContentOffset(CGPoint.zero, animated: false)
         
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        unsubscribeFromKeyboardNotifications()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -460,6 +467,36 @@ extension PenaltiesTableViewController: UITableViewDelegate, UITableViewDataSour
             })
             self.present(alert, animated: false, completion: nil)
         }
+    }
+    
+    func subscribeToKeyboardNotifications() {
+        NotificationCenter.default.addObserver(self, selector: #selector(PenaltiesTableViewController.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow,object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(PenaltiesTableViewController.keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide,object: nil)
+    }
+    
+    func unsubscribeFromKeyboardNotifications() {
+        NotificationCenter.default.removeObserver(self,name: NSNotification.Name.UIKeyboardWillShow,object: nil)
+        NotificationCenter.default.removeObserver(self,name: NSNotification.Name.UIKeyboardWillHide,object: nil)
+    }
+    
+    func keyboardWillShow(notification: NSNotification) {
+        if (!tableViewShrunk) {
+            penaltiesTableView.frame.size.height -= (getKeyboardHeight(notification: notification) - myToolbar.frame.size.height)
+        }
+        tableViewShrunk = true
+    }
+    
+    func keyboardWillHide(notification: NSNotification) {
+        if (tableViewShrunk) {
+            penaltiesTableView.frame.size.height += (getKeyboardHeight(notification: notification) - myToolbar.frame.size.height)
+        }
+        tableViewShrunk = false
+    }
+    
+    func getKeyboardHeight(notification: NSNotification) -> CGFloat {
+        let userInfo = notification.userInfo!
+        let keyboardSize = userInfo[UIKeyboardFrameEndUserInfoKey] as! NSValue
+        return keyboardSize.cgRectValue.height
     }
     
 }

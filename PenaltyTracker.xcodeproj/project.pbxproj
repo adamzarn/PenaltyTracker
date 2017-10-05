@@ -17,7 +17,6 @@
 		DB27C3941F3546B400ACED5A /* PenaltyTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB27C3931F3546B400ACED5A /* PenaltyTrackerTests.swift */; };
 		DB27C39F1F3546B400ACED5A /* PenaltyTrackerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB27C39E1F3546B400ACED5A /* PenaltyTrackerUITests.swift */; };
 		DB27C3AD1F354D0E00ACED5A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DB27C3AC1F354D0D00ACED5A /* GoogleService-Info.plist */; };
-		DB38ADCB1F42A6C800B18AB3 /* LifeTimeFitness.png in Resources */ = {isa = PBXBuildFile; fileRef = DB38ADCA1F42A6C800B18AB3 /* LifeTimeFitness.png */; };
 		DB38ADCD1F42AE2000B18AB3 /* LifeTimeFitnessLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = DB38ADCC1F42AE2000B18AB3 /* LifeTimeFitnessLogo.png */; };
 		DB4814041F354DA300ADFDE9 /* CreateAccountViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB4814031F354DA300ADFDE9 /* CreateAccountViewController.swift */; };
 		DB4814091F35520100ADFDE9 /* GlobalFunctions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB4814081F35520100ADFDE9 /* GlobalFunctions.swift */; };
@@ -73,7 +72,6 @@
 		DB27C39E1F3546B400ACED5A /* PenaltyTrackerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenaltyTrackerUITests.swift; sourceTree = "<group>"; };
 		DB27C3A01F3546B400ACED5A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		DB27C3AC1F354D0D00ACED5A /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		DB38ADCA1F42A6C800B18AB3 /* LifeTimeFitness.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LifeTimeFitness.png; sourceTree = "<group>"; };
 		DB38ADCC1F42AE2000B18AB3 /* LifeTimeFitnessLogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LifeTimeFitnessLogo.png; sourceTree = "<group>"; };
 		DB4814031F354DA300ADFDE9 /* CreateAccountViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreateAccountViewController.swift; sourceTree = "<group>"; };
 		DB4814081F35520100ADFDE9 /* GlobalFunctions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GlobalFunctions.swift; sourceTree = "<group>"; };
@@ -224,7 +222,6 @@
 				DB27C3821F3546B400ACED5A /* Main.storyboard */,
 				DB27C3851F3546B400ACED5A /* Assets.xcassets */,
 				DB5D34E31F3A332500E197D4 /* checkmark.png */,
-				DB38ADCA1F42A6C800B18AB3 /* LifeTimeFitness.png */,
 				DB38ADCC1F42AE2000B18AB3 /* LifeTimeFitnessLogo.png */,
 				DB27C3871F3546B400ACED5A /* LaunchScreen.storyboard */,
 			);
@@ -353,7 +350,6 @@
 				DB27C3891F3546B400ACED5A /* LaunchScreen.storyboard in Resources */,
 				DB5D34E41F3A332500E197D4 /* checkmark.png in Resources */,
 				DB27C3AD1F354D0E00ACED5A /* GoogleService-Info.plist in Resources */,
-				DB38ADCB1F42A6C800B18AB3 /* LifeTimeFitness.png in Resources */,
 				DB27C3861F3546B400ACED5A /* Assets.xcassets in Resources */,
 				DB38ADCD1F42AE2000B18AB3 /* LifeTimeFitnessLogo.png in Resources */,
 				DB27C3841F3546B400ACED5A /* Main.storyboard in Resources */,

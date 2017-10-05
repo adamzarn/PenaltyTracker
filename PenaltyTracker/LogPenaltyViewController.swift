@@ -130,6 +130,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     var playerLayer: AVPlayerLayer!
     @IBOutlet weak var uploadVideoButton: UIButton!
     @IBOutlet weak var videoControls: UIToolbar!
+    let playerViewBorderLayer = CAShapeLayer()
     
     @IBOutlet weak var recordAudioButton: UIButton!
     @IBOutlet weak var recordAudioImageButton: UIButton!
@@ -250,19 +251,19 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         profilePhoto.imageView?.layer.cornerRadius = 5.0
         profilePhoto.imageView?.contentMode = .scaleAspectFill
         
-        playerView.layer.borderWidth = 0.25
-        playerView.layer.borderColor = UIColor.lightGray.cgColor
-        roundTopsOf(view: playerView)
+        roundTopsWithBorderOf(view: playerView)
         roundBottomsOf(view: videoControls)
         
         player = AVPlayer()
         superLayer = self.playerView.layer
         playerLayer = AVPlayerLayer(player: player)
         playerLayer.frame = self.playerView.bounds
+        playerLayer.backgroundColor = UIColor.clear.cgColor
         playerLayer.cornerRadius = 5.0
         playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill
         superLayer.addSublayer(playerLayer)
 
+        self.videoAiv.isHidden = true
         self.photoAiv.isHidden = true
         self.view.bringSubview(toFront: photoAiv)
         
@@ -299,14 +300,18 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(false)
+        
+        redrawMediaView()
+        playerView.isHidden = false
 
-        myMapView.region.span = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
         if let penalty = penalty {
             if penalty.lat != "" {
+                myMapView.region.span = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
                 myMapView.centerCoordinate = CLLocationCoordinate2D(latitude: Double(penalty.lat)!, longitude: Double(penalty.long)!)
                 dropPin(lat: Double(penalty.lat)!, long: Double(penalty.long)!)
             }
         } else {
+            myMapView.region.span = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
             locationManager = CLLocationManager()
             locationManager.delegate = self
             locationManager.desiredAccuracy = kCLLocationAccuracyBest
@@ -361,6 +366,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         
         videoAiv.isHidden = false
         videoAiv.startAnimating()
+        noVideoToPlayLabel.isHidden = true
         FirebaseClient.shared.getVideo(eventID: eventID!, penaltyID: penalty.uid) { (video, error) -> () in
             self.videoAiv.isHidden = true
             self.videoAiv.stopAnimating()
@@ -402,7 +408,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                 }
             } else {
                 print("The error is \(error?.localizedDescription ?? "Error")")
-                self.savedRecordingButton.setTitle("NO RECORDING SAVED", for: .normal)
+                self.savedRecordingButton.setTitle("NO RECORDING TO PLAY", for: .normal)
                 self.savedRecordingButton.isEnabled = false
                 self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
             }
@@ -412,7 +418,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     
     override func viewWillAppear(_ animated: Bool) {
 
-        noVideoToPlayLabel.isHidden = true
+        noVideoToPlayLabel.isHidden = false
         
         NotificationCenter.default.addObserver(self, selector: #selector(LogPenaltyViewController.orientationChanged), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
         
@@ -430,6 +436,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                 dropPin(lat: location.coordinate.latitude, long: location.coordinate.longitude)
             }
             appearingAfterImagePicker = false
+            playerView.isHidden = true
         } else {
             shouldUploadPhoto = false
             shouldUploadVideo = false
@@ -443,6 +450,10 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                 } else {
                     self.profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
                 }
+                self.savedRecordingButton.setTitle("NO RECORDING TO PLAY", for: .normal)
+                self.savedRecordingButton.isEnabled = false
+                self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
+                
             }
         }
         
@@ -459,22 +470,31 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     
     func orientationChanged() {
         
+        if UIDevice.current.orientation.isLandscape ||
+            UIDevice.current.orientation.isPortrait {
+            redrawMediaView()
+        }
+
+        if UIDevice.current.orientation.isLandscape {
+            self.contentViewHeight.constant = 2400
+        } else if UIDevice.current.orientation.isPortrait {
+            self.contentViewHeight.constant = 2000
+        }
+       
+    }
+    
+    func redrawMediaView() {
         videoControls.layer.mask = nil
         savedRecordingButton.layer.mask = nil
         
         playerView.layer.mask = nil
+        playerViewBorderLayer.removeFromSuperlayer()
         
         roundBottomsOf(view: videoControls)
         roundBottomsOf(view: savedRecordingButton)
         
-        roundTopsOf(view: playerView)
+        roundTopsWithBorderOf(view: playerView)
         
-        if UIDevice.current.orientation.isLandscape {
-            self.contentViewHeight.constant = 2400
-            
-        } else {
-            self.contentViewHeight.constant = 2100
-        }
         playerLayer.frame = self.playerView.bounds
     }
 
@@ -710,6 +730,26 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                 } else {
                     uploadingLabel.text = "Uploading..."
                 }
+            }
+        } else {
+            var tasks: [String] = []
+            if shouldUploadPhoto {
+                tasks.append("a photo")
+            }
+            if shouldUploadVideo {
+                tasks.append("a video")
+            }
+            if shouldUploadAudio {
+                tasks.append("a voice recording")
+            }
+            if tasks.count == 1 {
+                uploadingLabel.text = "Uploading penalty details and \(tasks[0])..."
+            } else if tasks.count == 2 {
+                uploadingLabel.text = "Uploading penalty details, \(tasks[0]), and \(tasks[1])..."
+            } else if tasks.count == 3 {
+                uploadingLabel.text = "Uploading penalty details, \(tasks[0]), \(tasks[1]), and \(tasks[2])..."
+            } else {
+                uploadingLabel.text = "Uploading penalty details..."
             }
         }
 
@@ -982,13 +1022,20 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
 
     }
     
-    func roundTopsOf(view: UIView) {
+    func roundTopsWithBorderOf(view: UIView) {
         
         let maskPath = UIBezierPath.init(roundedRect: view.bounds, byRoundingCorners:[.topLeft, .topRight], cornerRadii: CGSize.init(width: 5.0, height: 5.0))
         let maskLayer = CAShapeLayer()
         maskLayer.frame = view.bounds
         maskLayer.path = maskPath.cgPath
         view.layer.mask = maskLayer
+        
+        playerViewBorderLayer.frame = view.bounds
+        playerViewBorderLayer.path = maskPath.cgPath
+        playerViewBorderLayer.lineWidth = 1.0
+        playerViewBorderLayer.strokeColor = UIColor.lightGray.cgColor
+        playerViewBorderLayer.fillColor = UIColor.clear.cgColor
+        view.layer.addSublayer(playerViewBorderLayer)
         
     }
     

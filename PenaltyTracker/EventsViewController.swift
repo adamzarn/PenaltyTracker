@@ -27,6 +27,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     @IBOutlet weak var pin4: PinField!
     @IBOutlet weak var submitPinButton: UIButton!
     @IBOutlet weak var cancelPinButton: UIButton!
+    @IBOutlet weak var myToolbar: UIToolbar!
     
     
     @IBOutlet weak var aiv: UIActivityIndicatorView!
@@ -39,6 +40,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     let searchController = UISearchController(searchResultsController: nil)
     
     var currentTextField: UITextField?
+    var tableViewShrunk = false
     
     let screenWidth = UIScreen.main.bounds.width
     let screenHeight = UIScreen.main.bounds.height
@@ -48,8 +50,6 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        myTableView.setContentOffset(CGPoint(x:0,y:searchController.searchBar.frame.size.height), animated: false)
         
         self.navigationController?.navigationBar.isTranslucent = false
         self.navigationController?.navigationBar.tintColor = UIColor.white
@@ -138,6 +138,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     override func viewWillAppear(_ animated: Bool) {
+        subscribeToKeyboardNotifications()
         enterPinView.isHidden = true
         myTableView.isHidden = true
         loadingLabel.isHidden = false
@@ -147,6 +148,7 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     override func viewWillDisappear(_ animated: Bool) {
+        unsubscribeFromKeyboardNotifications()
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name(rawValue: "deletePressed"), object: nil)
     }
     
@@ -366,6 +368,36 @@ class EventsViewController: UIViewController, UITableViewDataSource, UITableView
         currentTextField?.resignFirstResponder()
         enterPinView.isHidden = true
         dimView?.removeFromSuperview()
+    }
+    
+    func subscribeToKeyboardNotifications() {
+        NotificationCenter.default.addObserver(self, selector: #selector(EventsViewController.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow,object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(EventsViewController.keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide,object: nil)
+    }
+    
+    func unsubscribeFromKeyboardNotifications() {
+        NotificationCenter.default.removeObserver(self,name: NSNotification.Name.UIKeyboardWillShow,object: nil)
+        NotificationCenter.default.removeObserver(self,name: NSNotification.Name.UIKeyboardWillHide,object: nil)
+    }
+    
+    func keyboardWillShow(notification: NSNotification) {
+        if (!tableViewShrunk) {
+            myTableView.frame.size.height -= (getKeyboardHeight(notification: notification) - myToolbar.frame.size.height)
+        }
+        tableViewShrunk = true
+    }
+    
+    func keyboardWillHide(notification: NSNotification) {
+        if (tableViewShrunk) {
+            myTableView.frame.size.height += (getKeyboardHeight(notification: notification) - myToolbar.frame.size.height)
+        }
+        tableViewShrunk = false
+    }
+    
+    func getKeyboardHeight(notification: NSNotification) -> CGFloat {
+        let userInfo = notification.userInfo!
+        let keyboardSize = userInfo[UIKeyboardFrameEndUserInfoKey] as! NSValue
+        return keyboardSize.cgRectValue.height
     }
     
 }
