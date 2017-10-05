@@ -61,6 +61,23 @@ class GlobalFunctions: NSObject {
         
     }
     
+    func convertDoubleToTime(duration: Double) -> String {
+        let roundedSeconds = Int(round(duration))
+        let hours = roundedSeconds / 3600
+        let minutes = (roundedSeconds % 3600) / 60
+        let seconds = (roundedSeconds % 3600) % 60
+
+        let h = String(format: "%02d", hours)
+        let m = String(format: "%02d", minutes)
+        let s = String(format: "%02d", seconds)
+        
+        if hours > 0 {
+            return "\(h):\(m):\(s)"
+        } else {
+            return "\(minutes):\(s)"
+        }
+    }
+    
     func getCurrentDateAndTime() -> String {
         let date = Date()
         let formatter = DateFormatter()

@@ -142,7 +142,7 @@ struct Penalty: Equatable {
                 "notes": notes,
                 "submittedBy": submittedBy,
                 "timeStamp": timeStamp,
-                "checkedIn": false,
+                "checkedIn": checkedIn,
                 "edited": edited,
                 "edits": edits,
                 "lat": lat,

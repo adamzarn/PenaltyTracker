@@ -83,6 +83,8 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
             navItem.title = event.name
         }
         
+        penaltiesTableView.setContentOffset(CGPoint.zero, animated: false)
+        
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -96,6 +98,7 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
                 self.aiv.stopAnimating()
                 if error == "No Penalties Yet" {
                     self.setSegmentedControlTitles()
+                    self.penaltiesTableView.setContentOffset(CGPoint.zero, animated: false)
                     self.penaltiesTableView.isHidden = false
                     self.penaltiesTableView.reloadData()
                     self.refreshControl.endRefreshing()
@@ -107,6 +110,7 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
                     self.checkedInCount = checkedInCount
                     self.notCheckedInCount = penalties.count - checkedInCount
                     self.filterThenSortPenalties()
+                    self.penaltiesTableView.setContentOffset(CGPoint.zero, animated: false)
                     self.penaltiesTableView.isHidden = false
                     self.refreshControl.attributedTitle = NSAttributedString(string: "Last Updated: \(self.lastUpdatedTime())")
                     self.refreshControl.endRefreshing()
@@ -159,13 +163,17 @@ class PenaltiesTableViewController: UIViewController, UISearchBarDelegate, UISea
         self.penaltiesSegmentedControl.setTitle("Not Checked In (\(notCheckedInCount))", forSegmentAt: 2)
     }
     
-    @IBAction func filterCriteronChanged(_ sender: Any) {
+    @IBAction func filterCriterionChanged(_ sender: Any) {
+        self.penaltiesTableView.isHidden = true
+        self.aiv.isHidden = false
+        self.aiv.startAnimating()
         getPenalties()
     }
     
     @IBAction func sortCriterionChanged(_ sender: Any) {
         sortPenalties()
         penaltiesTableView.reloadData()
+        penaltiesTableView.setContentOffset(CGPoint.zero, animated: false)
     }
     
     @IBAction func logPenaltyButtonPressed(_ sender: Any) {

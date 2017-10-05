@@ -189,8 +189,13 @@ class FirebaseClient: NSObject {
     }
     
     func postPenalty(eventID: String, penaltyID: String, penalty: Penalty,
-                     profilePhoto: Data, shouldUpdatePhoto: Bool,
+                     imageData: Data, shouldUploadPhoto: Bool,
+                     videoData: Data, shouldUploadVideo: Bool,
+                     audioData: Data, shouldUploadAudio: Bool,
                      completion: @escaping (_ success: Bool?, _ message: NSString?) -> ()) {
+
+        var tasksCompleted = [false, !shouldUploadPhoto, !shouldUploadVideo, !shouldUploadAudio]
+        
         var penaltyRef: DatabaseReference!
         var successMessage: NSString!
         if penaltyID == "" {
@@ -200,26 +205,134 @@ class FirebaseClient: NSObject {
             penaltyRef = self.ref.child("Penalties").child(eventID).child(penaltyID)
             successMessage = "The penalty was successfully edited."
         }
+        
         let imageRef = self.storageRef.child(eventID).child(penaltyRef.key).child("profilePhoto")
+        let videoRef = self.storageRef.child(eventID).child(penaltyRef.key).child("video")
+        let audioRef = self.storageRef.child(eventID).child(penaltyRef.key).child("audio")
+        
         penaltyRef.setValue(penalty.toAnyObject()) { (error, ref) -> Void in
+            tasksCompleted[0] = true
             if error != nil {
-                completion(false, "Error")
+                print("0 error")
+                if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                    completion(false, "Error")
+                }
             } else {
-                if shouldUpdatePhoto {
-                    imageRef.putData(profilePhoto, metadata: nil) { (metadata, error) in
-                        guard metadata != nil else {
-                            completion(false, "Error")
-                            return
-                        }
-                        completion(true, successMessage)
-                    }
-                } else {
+                print("0 success")
+                if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
                     completion(true, successMessage)
                 }
             }
         }
+        
+        if !tasksCompleted[1] {
+            self.uploadData(ref: imageRef, data: imageData) { (success) -> () in
+                tasksCompleted[1] = true
+                if let success = success {
+                    if success {
+                        print("1 success")
+                        if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                            completion(true, successMessage)
+                        }
+                    } else {
+                        print("1 error")
+                        if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                            completion(false, "Error")
+                        }
+                    }
+                } else {
+                    print("1 error")
+                    if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                        completion(false, "Error")
+                    }
+                }
+            }
+        } else {
+            print("1 success - didn't need to do")
+            if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                completion(true, successMessage)
+            }
+        }
+        
+        if !tasksCompleted[2] {
+            self.uploadData(ref: videoRef, data: videoData) { (success) -> () in
+                tasksCompleted[2] = true
+                if let success = success {
+                    if success {
+                        print("2 success")
+                        if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                            completion(true, successMessage)
+                        }
+                    } else {
+                        print("2 error")
+                        if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                            completion(false, "Error")
+                        }
+                    }
+                } else {
+                    print("2 error")
+                    if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                        completion(false, "Error")
+                    }
+                }
+            }
+        } else {
+            print("2 success - didn't need to do")
+            if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                completion(true, successMessage)
+            }
+        }
+        
+        if !tasksCompleted[3] {
+            self.uploadData(ref: audioRef, data: audioData) { (success) -> () in
+                tasksCompleted[3] = true
+                if let success = success {
+                    if success {
+                        print("3 success")
+                        if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                            completion(true, successMessage)
+                        }
+                    } else {
+                        print("3 error")
+                        if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                            completion(false, "Error")
+                        }
+                    }
+                } else {
+                    print("3 error")
+                    if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                        completion(false, "Error")
+                    }
+                }
+            }
+        } else {
+            print("3 success - didn't need to do")
+            if self.allTasksCompleted(tasksCompleted: tasksCompleted) {
+                completion(true, successMessage)
+            }
+        }
+        
+  
     }
     
+    func allTasksCompleted(tasksCompleted: [Bool]) -> Bool {
+        if tasksCompleted == [true, true, true, true] {
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    func uploadData(ref: StorageReference, data: Data, completion: @escaping (_ success: Bool?) -> ()) {
+        ref.putData(data, metadata: nil) { (metadata, error) in
+            guard metadata != nil else {
+                completion(false)
+                return
+            }
+            completion(true)
+        }
+    }
+        
     func getProfilePhoto(eventID: String, penaltyID: String, completion: @escaping (_ image: UIImage?) -> ()) {
         let imageRef = self.storageRef.child(eventID).child(penaltyID).child("profilePhoto")
         imageRef.getMetadata { (metadata, error) -> () in
@@ -234,6 +347,28 @@ class FirebaseClient: NSObject {
                 }
             } else {
                 completion(nil)
+            }
+        }
+    }
+    
+    func getVideo(eventID: String, penaltyID: String, completion: @escaping (_ video: Data?, _ error: Error?) -> ()) {
+        let videoRef = self.storageRef.child(eventID).child(penaltyID).child("video")
+        videoRef.getData(maxSize: INT64_MAX) { (data, error) in
+            if let error = error {
+                completion(nil, error)
+            } else {
+                completion(data, nil)
+            }
+        }
+    }
+    
+    func getAudio(eventID: String, penaltyID: String, completion: @escaping (_ audio: Data?, _ error: Error?) -> ()) {
+        let audioRef = self.storageRef.child(eventID).child(penaltyID).child("audio")
+        audioRef.getData(maxSize: INT64_MAX) { (data, error) in
+            if let error = error {
+                completion(nil, error)
+            } else {
+                completion(data, nil)
             }
         }
     }
@@ -280,11 +415,32 @@ class FirebaseClient: NSObject {
     
     func deletePenalty(eventID: String, penaltyID: String, completion: @escaping (_ success: Bool?) -> ()) {
         let penaltyToDeleteRef = self.ref.child("Penalties").child(eventID).child(penaltyID)
+        let imageRef = self.storageRef.child(eventID).child(penaltyID).child("profilePhoto")
+        let videoRef = self.storageRef.child(eventID).child(penaltyID).child("video")
+        let audioRef = self.storageRef.child(eventID).child(penaltyID).child("audio")
         penaltyToDeleteRef.removeValue() { (error, ref) -> Void in
             if error != nil {
                 completion(false)
             } else {
-                completion(true)
+                var tasksCompleted = [false, false, false]
+                imageRef.delete() { (error) -> Void in
+                    tasksCompleted[0] = true
+                    if tasksCompleted == [true, true, true] {
+                        completion(true)
+                    }
+                }
+                videoRef.delete() { (error) -> Void in
+                    tasksCompleted[1] = true
+                    if tasksCompleted == [true, true, true] {
+                        completion(true)
+                    }
+                }
+                audioRef.delete() { (error) -> Void in
+                    tasksCompleted[2] = true
+                    if tasksCompleted == [true, true, true] {
+                        completion(true)
+                    }
+                }
             }
         }
     }

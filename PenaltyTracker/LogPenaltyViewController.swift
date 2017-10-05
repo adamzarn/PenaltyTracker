@@ -11,8 +11,11 @@ import Firebase
 import CoreLocation
 import MapKit
 import Darwin
+import AVKit
+import AVFoundation
+import MobileCoreServices
 
-class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextViewDelegate, UIScrollViewDelegate, MKMapViewDelegate, CLLocationManagerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextViewDelegate, UIScrollViewDelegate, MKMapViewDelegate, CLLocationManagerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, AVAudioRecorderDelegate {
     
     var locationManager: CLLocationManager!
     var location: CLLocation! {
@@ -44,7 +47,6 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
             let latDelta = lat2-lat1
             let longDelta = long2-long1
             distanceTraveled = sqrt(pow(latDelta, 2) + pow(longDelta, 2))
-            print(distanceTraveled!)
             if let distanceTraveled = distanceTraveled {
                 if distanceTraveled > 0.0001 {
                     location = locations.last
@@ -69,16 +71,29 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     var edits: [Edit] = []
     var options: [String] = []
     var profilePhotoImageData: Data?
+    var videoData: Data?
+    var videoUrl: URL?
+    var audioData: Data?
+    var audioUrl: URL?
     var appearingAfterImagePicker = false
-    var shouldUpdatePhoto = false
+    var shouldUploadPhoto = false
+    var shouldUploadVideo = false
+    var shouldUploadAudio = false
     
     @IBOutlet weak var scrollView: UIScrollView!
     @IBOutlet weak var contentView: UIView!
+    @IBOutlet weak var contentViewHeight: NSLayoutConstraint!
+    
     @IBOutlet weak var selectionView: UIView!
     @IBOutlet weak var categoryLabel: UILabel!
     @IBOutlet weak var selectionTableView: UITableView!
+    
     @IBOutlet weak var aiv: UIActivityIndicatorView!
-
+    @IBOutlet weak var uploadingLabel: UILabel!
+    
+    @IBOutlet weak var photoAiv: UIActivityIndicatorView!
+    @IBOutlet weak var videoAiv: UIActivityIndicatorView!
+    
     @IBOutlet weak var bibNumberTextField: UITextField!
     @IBOutlet weak var genderTextField: UITextField!
 
@@ -106,7 +121,25 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     @IBOutlet weak var locationLabel: UILabel!
 
     @IBOutlet weak var myMapView: MKMapView!
-
+    
+    @IBOutlet weak var mediaLabel: UILabel!
+    @IBOutlet weak var playerView: UIView!
+    @IBOutlet weak var noVideoToPlayLabel: UILabel!
+    var player: AVPlayer!
+    var superLayer: CALayer!
+    var playerLayer: AVPlayerLayer!
+    @IBOutlet weak var uploadVideoButton: UIButton!
+    @IBOutlet weak var videoControls: UIToolbar!
+    
+    @IBOutlet weak var recordAudioButton: UIButton!
+    @IBOutlet weak var recordAudioImageButton: UIButton!
+    var audioRecorder: AVAudioRecorder!
+    var audioPlayer: AVAudioPlayer!
+    var audioEngine: AVAudioEngine!
+    var session: AVAudioSession!
+    @IBOutlet weak var savedRecordingButton: UIButton!
+    var currentAudioDuration: Double?
+    
     @IBOutlet weak var notesLabel: UILabel!
 
     @IBOutlet weak var notesTextView: UITextView!
@@ -171,14 +204,9 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         notesTextView.layer.cornerRadius = 5.00
         
         myMapView.layer.cornerRadius = 5.00
-
-        aiv.isHidden = false
-        aiv.startAnimating()
-
+        
         if GlobalFunctions.shared.hasConnectivity() {
             FirebaseClient.shared.getDescriptors() { (bikes, colors, penaltyTypes, error) -> () in
-                self.aiv.isHidden = true
-                self.aiv.stopAnimating()
                 if let bikes = bikes, let colors = colors, let penaltyTypes = penaltyTypes {
                     
                     self.bikes = bikes
@@ -207,11 +235,12 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         notesLabel.textColor = appDelegate.darkBlueColor
         editsLabel.textColor = appDelegate.darkBlueColor
         locationLabel.textColor = appDelegate.darkBlueColor
-
+        mediaLabel.textColor = appDelegate.darkBlueColor
+        
         submitButton.tintColor = appDelegate.darkBlueColor
         
         dimView = UIView(frame: UIScreen.main.bounds)
-        dimView?.backgroundColor = UIColor(white: 0.4, alpha: 0.5)
+        dimView?.backgroundColor = UIColor(white: 0.4, alpha: 0.8)
         selectionView.isHidden = true
         selectionView.isUserInteractionEnabled = false
         
@@ -221,12 +250,35 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         profilePhoto.imageView?.layer.cornerRadius = 5.0
         profilePhoto.imageView?.contentMode = .scaleAspectFill
         
-        if let profilePhotoImageData = profilePhotoImageData {
-            profilePhoto.setImage(UIImage(data: profilePhotoImageData), for: .normal)
-        } else {
-            profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
-        }
+        playerView.layer.borderWidth = 0.25
+        playerView.layer.borderColor = UIColor.lightGray.cgColor
+        roundTopsOf(view: playerView)
+        roundBottomsOf(view: videoControls)
+        
+        player = AVPlayer()
+        superLayer = self.playerView.layer
+        playerLayer = AVPlayerLayer(player: player)
+        playerLayer.frame = self.playerView.bounds
+        playerLayer.cornerRadius = 5.0
+        playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill
+        superLayer.addSublayer(playerLayer)
 
+        self.photoAiv.isHidden = true
+        self.view.bringSubview(toFront: photoAiv)
+        
+        roundBottomsOf(view: savedRecordingButton)
+        session = AVAudioSession.sharedInstance()
+        try! session.setCategory(AVAudioSessionCategoryPlayback)
+        
+    }
+    
+    @IBAction func uploadVideoButtonPressed(_ sender: Any) {
+        let picker = UIImagePickerController()
+        picker.delegate = self
+        picker.allowsEditing = true
+        picker.sourceType = .photoLibrary
+        picker.mediaTypes = [kUTTypeMovie as String]
+        self.present(picker, animated: true, completion: nil)
     }
     
     func showPopup() {
@@ -264,6 +316,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     }
     
     func populateView(penalty: Penalty) {
+        
         bibNumberTextField.text = penalty.bibNumber
         genderTextField.text = penalty.gender
         bikeTypeTextField.text = penalty.bikeType
@@ -290,16 +343,81 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         submitButton.title = "SUBMIT CHANGES"
         
         self.profilePhoto.setImage(UIImage(data: Data()), for: .normal)
+        self.photoAiv.isHidden = false
+        self.photoAiv.startAnimating()
         FirebaseClient.shared.getProfilePhoto(eventID: eventID!, penaltyID: penalty.uid) { (image) -> () in
+            self.photoAiv.isHidden = true
+            self.photoAiv.stopAnimating()
             if let image = image {
                 self.profilePhoto.setImage(image, for: .normal)
+            } else {
+                if self.genderTextField.text == "Female" {
+                    self.profilePhoto.setImage(UIImage(named: "Girl.png"), for: .normal)
+                } else {
+                    self.profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
+                }
             }
         }
+        
+        videoAiv.isHidden = false
+        videoAiv.startAnimating()
+        FirebaseClient.shared.getVideo(eventID: eventID!, penaltyID: penalty.uid) { (video, error) -> () in
+            self.videoAiv.isHidden = true
+            self.videoAiv.stopAnimating()
+            if let video = video {
+                let currentVideoUrl = try! FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent("currentVideo.mp4")
+                do {
+                    try video.write(to: currentVideoUrl, options: .atomic)
+                    let item = AVPlayerItem(url: currentVideoUrl)
+                    self.player.replaceCurrentItem(with: item)
+                    self.noVideoToPlayLabel.isHidden = true
+                } catch {
+                    print("Couldn't write video to file")
+                    self.noVideoToPlayLabel.isHidden = false
+                }
+            } else {
+                print("The error is \(error?.localizedDescription ?? "Error")")
+                self.noVideoToPlayLabel.isHidden = false
+            }
+        }
+        
+        savedRecordingButton.setTitle("CHECKING FOR SAVED RECORDING...", for: .normal)
+        savedRecordingButton.isEnabled = false
+        savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
+        FirebaseClient.shared.getAudio(eventID: eventID!, penaltyID: penalty.uid) { (audio, error) -> () in
+            if let audio = audio {
+                let currentAudioUrl = try! FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent("currentAudio.wav")
+                do {
+                    try audio.write(to: currentAudioUrl, options: .atomic)
+                    self.audioPlayer =  try! AVAudioPlayer(contentsOf: currentAudioUrl)
+                    self.audioPlayer.enableRate = true
+                    self.currentAudioDuration = self.audioPlayer.duration
+                    self.audioEngine = AVAudioEngine()
+                    let duration = GlobalFunctions.shared.convertDoubleToTime(duration: self.currentAudioDuration!)
+                    self.savedRecordingButton.setTitle("PLAY SAVED RECORDING (\(duration))", for: .normal)
+                    self.savedRecordingButton.isEnabled = true
+                    self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor
+                } catch {
+                    print("Couldn't write video to file")
+                }
+            } else {
+                print("The error is \(error?.localizedDescription ?? "Error")")
+                self.savedRecordingButton.setTitle("NO RECORDING SAVED", for: .normal)
+                self.savedRecordingButton.isEnabled = false
+                self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
+            }
+        }
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
 
-        //NotificationCenter.default.addObserver(self, selector: #selector(LogPenaltyViewController.orientationChanged), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
+        noVideoToPlayLabel.isHidden = true
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(LogPenaltyViewController.orientationChanged), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(LogPenaltyViewController.playerDidFinishPlaying),
+                                               name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: self.player.currentItem)
 
         self.scrollView.contentSize = CGSize(width: self.view.frame.size.width, height: self.contentView.frame.size.height)
 
@@ -311,20 +429,53 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
             if let location = location {
                 dropPin(lat: location.coordinate.latitude, long: location.coordinate.longitude)
             }
+            appearingAfterImagePicker = false
         } else {
-            shouldUpdatePhoto = false
-        }
-        appearingAfterImagePicker = false
-        
-        if let penalty = penalty {
-            self.title = "Review Penalty"
-            populateView(penalty: penalty)
+            shouldUploadPhoto = false
+            shouldUploadVideo = false
+            shouldUploadAudio = false
+            if let penalty = penalty {
+                self.title = "Review Penalty"
+                populateView(penalty: penalty)
+            } else {
+                if self.genderTextField.text == "Female" {
+                    self.profilePhoto.setImage(UIImage(named: "Girl.png"), for: .normal)
+                } else {
+                    self.profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
+                }
+            }
         }
         
     }
 
     override func viewWillDisappear(_ animated: Bool) {
-        //NotificationCenter.default.removeObserver(NSNotification.Name.UIDeviceOrientationDidChange)
+        NotificationCenter.default.removeObserver(NSNotification.Name.UIDeviceOrientationDidChange)
+        NotificationCenter.default.removeObserver(NSNotification.Name.AVPlayerItemDidPlayToEndTime)
+    }
+    
+    func playerDidFinishPlaying() {
+        player.seek(to: kCMTimeZero)
+    }
+    
+    func orientationChanged() {
+        
+        videoControls.layer.mask = nil
+        savedRecordingButton.layer.mask = nil
+        
+        playerView.layer.mask = nil
+        
+        roundBottomsOf(view: videoControls)
+        roundBottomsOf(view: savedRecordingButton)
+        
+        roundTopsOf(view: playerView)
+        
+        if UIDevice.current.orientation.isLandscape {
+            self.contentViewHeight.constant = 2400
+            
+        } else {
+            self.contentViewHeight.constant = 2100
+        }
+        playerLayer.frame = self.playerView.bounds
     }
 
     func dropPin(lat: Double, long: Double) {
@@ -506,7 +657,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         let helmetColor = helmetColorTextField.text!
         let topColor = topColorTextField.text!
         let pantColor = pantColorTextField.text!
-        let penalty = penaltyTextField.text!
+        let penaltyString = penaltyTextField.text!
         let bikeLengths = bikeLengthsTextField.text!
         let seconds = secondsTextField.text!
         let approximateMile = approximateMileTextField.text!
@@ -514,29 +665,63 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         let notes = notesTextView.text!
         var existingPenaltyUid = ""
         var existingEdits = ["":""]
+        var lat = ""
+        var long = ""
+        var checkedIn = false
         if let existingPenalty = self.penalty {
             existingPenaltyUid = existingPenalty.uid
             existingEdits = existingPenalty.edits
+            lat = existingPenalty.lat
+            long = existingPenalty.long
+            checkedIn = existingPenalty.checkedIn
+        } else {
+            lat = String(location.coordinate.latitude)
+            long = String(location.coordinate.longitude)
         }
 
-        var newPenalty = Penalty(uid: existingPenaltyUid, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penalty, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy!, timeStamp: "", checkedIn: false, edited: false, edits: [:], lat: String(location.coordinate.latitude), long: String(location.coordinate.longitude))
+        var newPenalty = Penalty(uid: existingPenaltyUid, bibNumber: bibNumber, gender: gender, bikeType: bikeType, bikeColor: bikeColor, helmetColor: helmetColor, topColor: topColor, pantColor: pantColor, penalty: penaltyString, bikeLengths: bikeLengths, seconds: seconds, approximateMile: approximateMile, notes: notes, submittedBy: submittedBy!, timeStamp: "", checkedIn: checkedIn, edited: false, edits: [:], lat: lat, long: long)
 
         if let existingPenalty = self.penalty {
-            if existingPenalty == newPenalty {
+            if existingPenalty == newPenalty && !shouldUploadPhoto && !shouldUploadVideo && !shouldUploadAudio {
                 displayAlert(title: "No changes made.", message: "There are no changes to submit.")
                 return
+            } else {
+                var tasks: [String] = []
+                if existingPenalty != newPenalty {
+                    tasks.append("penalty details")
+                }
+                if shouldUploadPhoto {
+                    tasks.append("a photo")
+                }
+                if shouldUploadVideo {
+                    tasks.append("a video")
+                }
+                if shouldUploadAudio {
+                    tasks.append("a voice recording")
+                }
+                if tasks.count == 1 {
+                    uploadingLabel.text = "Uploading \(tasks[0])..."
+                } else if tasks.count == 2 {
+                    uploadingLabel.text = "Uploading \(tasks[0]) and \(tasks[1])..."
+                } else if tasks.count == 3 {
+                    uploadingLabel.text = "Uploading \(tasks[0]), \(tasks[1]), and \(tasks[2])..."
+                } else if tasks.count == 4 {
+                    uploadingLabel.text = "Uploading \(tasks[0]), \(tasks[1]), \(tasks[2]), and \(tasks[3])..."
+                } else {
+                    uploadingLabel.text = "Uploading..."
+                }
             }
         }
 
         var penaltyMessage = ""
-        if penalty == "Drafting" {
+        if penaltyString == "Drafting" {
             if bikeLengths == "1" {
-                penaltyMessage = "\(penalty) (\(bikeLengths) length, \(seconds) s)"
+                penaltyMessage = "\(penaltyString) (\(bikeLengths) length, \(seconds) s)"
             } else {
-                penaltyMessage = "\(penalty) (\(bikeLengths) lengths, \(seconds) s)"
+                penaltyMessage = "\(penaltyString) (\(bikeLengths) lengths, \(seconds) s)"
             }
         } else {
-            penaltyMessage = penalty
+            penaltyMessage = penaltyString
         }
 
         let message = "Does everything look correct? \n\n Bib Number: \(bibNumber) \n Gender: \(gender) \n Bike Type: \(bikeType) \n Bike Color: \(bikeColor) \n Helmet Color: \(helmetColor) \n Top Color: \(topColor) \n Pant Color: \(pantColor) \n Penalty: \(penaltyMessage) \n Approximate Mile: \(approximateMile)"
@@ -554,7 +739,39 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                 newPenalty.edited = true
             }
             if GlobalFunctions.shared.hasConnectivity() {
-                FirebaseClient.shared.postPenalty(eventID: (self.eventID)!, penaltyID: existingPenaltyUid, penalty: newPenalty, profilePhoto: self.profilePhotoImageData!, shouldUpdatePhoto: self.shouldUpdatePhoto) { (success, message) -> () in
+                self.aiv.isHidden = false
+                self.aiv.startAnimating()
+                self.uploadingLabel.isHidden = false
+                self.view.addSubview(self.dimView!)
+                self.view.bringSubview(toFront: self.dimView!)
+                self.view.bringSubview(toFront: self.aiv)
+                self.view.bringSubview(toFront: self.uploadingLabel)
+                var profilePhoto: Data!
+                if let p = self.profilePhotoImageData {
+                    profilePhoto = p
+                } else {
+                    profilePhoto = Data()
+                }
+                var videoData: Data!
+                if let v = self.videoData {
+                    videoData = v
+                } else {
+                    videoData = Data()
+                }
+                var audioData: Data!
+                if let a = self.audioData {
+                    audioData = a
+                } else {
+                    audioData = Data()
+                }
+                FirebaseClient.shared.postPenalty(eventID: (self.eventID)!, penaltyID: existingPenaltyUid, penalty: newPenalty, imageData: profilePhoto, shouldUploadPhoto: self.shouldUploadPhoto, videoData: videoData, shouldUploadVideo: self.shouldUploadVideo, audioData: audioData, shouldUploadAudio: self.shouldUploadAudio) { (success, message) -> () in
+                    self.shouldUploadPhoto = false
+                    self.shouldUploadVideo = false
+                    self.shouldUploadAudio = false
+                    self.aiv.isHidden = true
+                    self.aiv.stopAnimating()
+                    self.uploadingLabel.isHidden = true
+                    self.dimView?.removeFromSuperview()
                     if let success = success, let message = message {
                         if success {
                             let alert = UIAlertController(title: "Success!", message: message as String, preferredStyle: .alert)
@@ -564,6 +781,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                                 } else {
                                     self.updateEditsArray(existingEdits: existingEdits)
                                     self.editsTableView.reloadData()
+                                    self.penalty = newPenalty
                                 }
                             })
                             self.present(alert, animated: false, completion: nil)
@@ -598,7 +816,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
 
         if textField == bibNumberTextField {
             let currentCharacterCount = textField.text?.characters.count ?? 0
-            if (range.length + range.location > currentCharacterCount){
+            if (range.length + range.location > currentCharacterCount) {
                 return false
             }
             let newLength = currentCharacterCount + string.characters.count - range.length
@@ -653,14 +871,127 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
         appearingAfterImagePicker = true
         picker.dismiss(animated: true, completion: nil)
-        let image = info[UIImagePickerControllerOriginalImage] as! UIImage
         
-        profilePhotoImageData = UIImageJPEGRepresentation(image, 0.0)
-        shouldUpdatePhoto = true
-        profilePhoto.setImage(UIImage(data: profilePhotoImageData!), for: .normal)
+        let mediaType = info[UIImagePickerControllerMediaType] as! CFString
+        let isMovie = UTTypeConformsTo(mediaType as CFString, kUTTypeMovie)
+        
+        if isMovie {
+            let videoUrl = info[UIImagePickerControllerMediaURL] as? URL
+            
+            if let videoUrl = videoUrl {
+                do {
+                    videoData = try Data(contentsOf: videoUrl)
+                    shouldUploadVideo = true
+                    let item = AVPlayerItem(url: videoUrl)
+                    self.player.replaceCurrentItem(with: item)
+                } catch {
+                    print(error.localizedDescription)
+                }
+            }
+            
+        } else {
+            let image = info[UIImagePickerControllerOriginalImage] as! UIImage
+            profilePhotoImageData = UIImageJPEGRepresentation(image, 0.0)
+            shouldUploadPhoto = true
+            profilePhoto.setImage(UIImage(data: profilePhotoImageData!), for: .normal)
+        }
         
     }
+    
+    @IBAction func playVideoButtonPressed(_ sender: Any) {
+        player.play()
+    }
+    
+    @IBAction func pauseVideoButtonPressed(_ sender: Any) {
+        player.pause()
+    }
+    
+    @IBAction func startOverButtonPressed(_ sender: Any) {
+        player.pause()
+        player.seek(to: kCMTimeZero)
+    }
+    
+    @IBAction func recordAudioButtonPressed(_ sender: Any) {
+        
+        if recordAudioButton.titleLabel?.text == "RECORD AUDIO" {
+        
+            recordAudioButton.setTitle("STOP RECORDING", for: .normal)
+            savedRecordingButton.setTitle("RECORDING...", for: .normal)
+            savedRecordingButton.isEnabled = false
+            self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
+            audioUrl = try! FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent("currentAudio.wav")
+            try! session.setCategory(AVAudioSessionCategoryPlayAndRecord)
+            try! audioRecorder = AVAudioRecorder(url: audioUrl!, settings: [:])
+            audioRecorder.delegate = self
+            audioRecorder.isMeteringEnabled = true
+            audioRecorder.prepareToRecord()
+            audioRecorder.record()
+            
+        } else {
+            
+            recordAudioButton.setTitle("RECORD AUDIO", for: .normal)
+            audioRecorder.stop()
+            try! session.setActive(false)
+            
+        }
+        
+    }
+    
+    func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+        if (flag) {
+            if let audioUrl = audioUrl {
+                do {
+                    audioData = try Data(contentsOf: audioUrl)
+                    shouldUploadAudio = true
+                    self.audioPlayer =  try! AVAudioPlayer(contentsOf: audioUrl)
+                    self.audioPlayer.enableRate = true
+                    self.audioEngine = AVAudioEngine()
+                    self.currentAudioDuration = self.audioPlayer.duration
+                    let duration = GlobalFunctions.shared.convertDoubleToTime(duration: self.currentAudioDuration!)
+                    self.savedRecordingButton.setTitle("PLAY SAVED RECORDING (\(duration))", for: .normal)
+                    self.savedRecordingButton.isEnabled = true
+                    self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor
+                } catch {
+                    print("could not save audio")
+                }
+            }
+        } else {
+            print("saving failed")
+        }
+    }
+    
+    func stopAllAudio() {
+        audioEngine.stop()
+        audioEngine.reset()
+        audioPlayer.stop()
+        audioPlayer.currentTime = 0.0
+    }
+    
+    @IBAction func playRecording(_ sender: Any) {
+        try! session.setCategory(AVAudioSessionCategoryPlayback)
+        audioPlayer.play()
+    }
+    
+    func roundBottomsOf(view: UIView) {
+        
+        let maskPath = UIBezierPath.init(roundedRect: view.bounds, byRoundingCorners:[.bottomLeft, .bottomRight], cornerRadii: CGSize.init(width: 5.0, height: 5.0))
+        let maskLayer = CAShapeLayer()
+        maskLayer.frame = view.bounds
+        maskLayer.path = maskPath.cgPath
+        view.layer.mask = maskLayer
 
+    }
+    
+    func roundTopsOf(view: UIView) {
+        
+        let maskPath = UIBezierPath.init(roundedRect: view.bounds, byRoundingCorners:[.topLeft, .topRight], cornerRadii: CGSize.init(width: 5.0, height: 5.0))
+        let maskLayer = CAShapeLayer()
+        maskLayer.frame = view.bounds
+        maskLayer.path = maskPath.cgPath
+        view.layer.mask = maskLayer
+        
+    }
+    
 }
 
 extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
