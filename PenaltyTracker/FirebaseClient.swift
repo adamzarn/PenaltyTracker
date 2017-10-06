@@ -398,17 +398,66 @@ class FirebaseClient: NSObject {
     func deleteEvent(eventID: String, completion: @escaping (_ success: Bool?) -> ()) {
         let eventToDeleteRef = self.ref.child("Events").child(eventID)
         let penaltiesToDeleteRef = self.ref.child("Penalties").child(eventID)
+        
         eventToDeleteRef.removeValue() { (error, ref) -> Void in
             if error != nil {
                 completion(false)
             } else {
-                penaltiesToDeleteRef.removeValue() { (error, ref) -> Void in
-                    if error != nil {
-                        completion(false)
+                penaltiesToDeleteRef.observeSingleEvent(of: .value, with: { snapshot in
+                    if snapshot.exists() {
+                        if let data = snapshot.value {
+                            let penalties = data as! NSDictionary
+                            let penaltyIDs = penalties.allKeys as! [String]
+                            penaltiesToDeleteRef.removeValue() { (error, ref) -> Void in
+                                if error != nil {
+                                    completion(false)
+                                } else {
+                                    var foldersDeleted = 0
+                                    for penaltyID in penaltyIDs {
+                                        let imageRef = self.storageRef.child(eventID).child(penaltyID).child("profilePhoto")
+                                        let videoRef = self.storageRef.child(eventID).child(penaltyID).child("video")
+                                        let audioRef = self.storageRef.child(eventID).child(penaltyID).child("audio")
+                                        var tasksCompleted = [false, false, false]
+                                        imageRef.delete() { (error) -> Void in
+                                            tasksCompleted[0] = true
+                                            if tasksCompleted == [true, true, true] {
+                                                foldersDeleted = foldersDeleted + 1
+                                                print(foldersDeleted)
+                                            }
+                                            if foldersDeleted == penaltyIDs.count {
+                                                completion(true)
+                                            }
+                                        }
+                                        videoRef.delete() { (error) -> Void in
+                                            tasksCompleted[1] = true
+                                            if tasksCompleted == [true, true, true] {
+                                                foldersDeleted = foldersDeleted + 1
+                                                print(foldersDeleted)
+                                            }
+                                            if foldersDeleted == penaltyIDs.count {
+                                                completion(true)
+                                            }
+                                        }
+                                        audioRef.delete() { (error) -> Void in
+                                            tasksCompleted[2] = true
+                                            if tasksCompleted == [true, true, true] {
+                                                foldersDeleted = foldersDeleted + 1
+                                                print(foldersDeleted)
+                                            }
+                                            if foldersDeleted == penaltyIDs.count {
+                                                completion(true)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            completion(false)
+                        }
                     } else {
                         completion(true)
                     }
-                }
+                })
             }
         }
     }

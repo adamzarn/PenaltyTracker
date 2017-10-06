@@ -211,8 +211,10 @@ class CreateEventViewController: UIViewController, UITextFieldDelegate, UIPicker
                     if let success = success, let message = message {
                         if success {
                             self.event = newEvent
-                            let penaltiesTableVC = self.navigationController?.viewControllers[1] as! PenaltiesTableViewController
-                            penaltiesTableVC.event = newEvent
+                            if self.navigationItem.title == "Edit Event" {
+                                let penaltiesTableVC = self.navigationController?.viewControllers[1] as! PenaltiesTableViewController
+                                penaltiesTableVC.event = newEvent
+                            }
                             let alert = UIAlertController(title: "Success!", message: message as String,  preferredStyle: .alert)
                             if existingEventUid == "" {
                                 alert.addAction(UIAlertAction(title: "Sure", style: .default) { (_) in

@@ -1787,7 +1787,6 @@
                                                                     </view>
                                                                     <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" translucent="NO" translatesAutoresizingMaskIntoConstraints="NO" id="zZ3-Km-QA0">
                                                                         <rect key="frame" x="0.0" y="202" width="359" height="40"/>
-                                                                        <color key="backgroundColor" red="0.31372549019607843" green="0.38823529411764707" blue="0.50980392156862742" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                                         <constraints>
                                                                             <constraint firstAttribute="height" constant="40" id="CMX-i1-olM"/>
                                                                         </constraints>
@@ -1811,7 +1810,7 @@
                                                                             </barButtonItem>
                                                                         </items>
                                                                         <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                                                        <color key="barTintColor" red="0.31372549019607843" green="0.38823529411764707" blue="0.50980392156862742" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                        <color key="barTintColor" red="0.38528561589999999" green="0.46700757739999998" blue="0.58193349839999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                                     </toolbar>
                                                                 </subviews>
                                                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
@@ -1853,7 +1852,7 @@
                                                                     </stackView>
                                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="lig-Ol-6uW">
                                                                         <rect key="frame" x="0.0" y="128" width="359" height="40"/>
-                                                                        <color key="backgroundColor" red="0.31372549020000001" green="0.38823529410000002" blue="0.50980392159999999" alpha="1" colorSpace="calibratedRGB"/>
+                                                                        <color key="backgroundColor" red="0.38528561589999999" green="0.46700757739999998" blue="0.58193349839999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                                         <constraints>
                                                                             <constraint firstAttribute="height" constant="40" id="a0M-NU-pSy"/>
                                                                         </constraints>

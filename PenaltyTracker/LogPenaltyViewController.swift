@@ -15,7 +15,7 @@ import AVKit
 import AVFoundation
 import MobileCoreServices
 
-class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextViewDelegate, UIScrollViewDelegate, MKMapViewDelegate, CLLocationManagerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, AVAudioRecorderDelegate {
+class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextViewDelegate, UIScrollViewDelegate, MKMapViewDelegate, CLLocationManagerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, AVAudioRecorderDelegate, AVAudioPlayerDelegate {
     
     var locationManager: CLLocationManager!
     var location: CLLocation! {
@@ -377,13 +377,16 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     let item = AVPlayerItem(url: currentVideoUrl)
                     self.player.replaceCurrentItem(with: item)
                     self.noVideoToPlayLabel.isHidden = true
+                    self.videoControls.backgroundColor = self.appDelegate.darkBlueColor
                 } catch {
                     print("Couldn't write video to file")
                     self.noVideoToPlayLabel.isHidden = false
+                    self.videoControls.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
                 }
             } else {
                 print("The error is \(error?.localizedDescription ?? "Error")")
                 self.noVideoToPlayLabel.isHidden = false
+                self.videoControls.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
             }
         }
         
@@ -396,6 +399,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                 do {
                     try audio.write(to: currentAudioUrl, options: .atomic)
                     self.audioPlayer =  try! AVAudioPlayer(contentsOf: currentAudioUrl)
+                    self.audioPlayer.delegate = self
                     self.audioPlayer.enableRate = true
                     self.currentAudioDuration = self.audioPlayer.duration
                     self.audioEngine = AVAudioEngine()
@@ -419,6 +423,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     override func viewWillAppear(_ animated: Bool) {
 
         noVideoToPlayLabel.isHidden = false
+        self.videoControls.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
         
         NotificationCenter.default.addObserver(self, selector: #selector(LogPenaltyViewController.orientationChanged), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
         
@@ -875,31 +880,38 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     }
     
     @IBAction func addProfilePhoto(_ sender: Any) {
-        let picker = UIImagePickerController()
-        picker.delegate = self
-        picker.allowsEditing = true
         
-        let sourceTypeAlert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        sourceTypeAlert.addAction(UIAlertAction(title: "Take Photo", style: .default, handler: { (action) in
-            picker.sourceType = UIImagePickerControllerSourceType.camera
-            self.present(picker, animated: true, completion: nil)
-        }))
-        sourceTypeAlert.addAction(UIAlertAction(title: "Choose Photo", style: .default, handler: { (action) in
-            picker.sourceType = UIImagePickerControllerSourceType.photoLibrary
-            self.present(picker, animated: true, completion: nil)
-        }))
-        if profilePhotoImageData != nil {
-            sourceTypeAlert.addAction(UIAlertAction(title: "Remove Current Photo", style: .default, handler: { (action) in
-                self.profilePhotoImageData = nil
-                if self.genderTextField.text == "Female" {
-                    self.profilePhoto.setImage(UIImage(named: "Girl.png"), for: .normal)
-                } else {
-                    self.profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
-                }
+        if currentTextField != bibNumberTextField {
+            let picker = UIImagePickerController()
+            picker.delegate = self
+            picker.allowsEditing = true
+            
+            let sourceTypeAlert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+            sourceTypeAlert.addAction(UIAlertAction(title: "Take Photo", style: .default, handler: { (action) in
+                picker.sourceType = UIImagePickerControllerSourceType.camera
+                self.present(picker, animated: true, completion: nil)
             }))
+            sourceTypeAlert.addAction(UIAlertAction(title: "Choose Photo", style: .default, handler: { (action) in
+                picker.sourceType = UIImagePickerControllerSourceType.photoLibrary
+                self.present(picker, animated: true, completion: nil)
+            }))
+            sourceTypeAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+            if profilePhotoImageData != nil {
+                sourceTypeAlert.addAction(UIAlertAction(title: "Remove Current Photo", style: .default, handler: { (action) in
+                    self.profilePhotoImageData = nil
+                    if self.genderTextField.text == "Female" {
+                        self.profilePhoto.setImage(UIImage(named: "Girl.png"), for: .normal)
+                    } else {
+                        self.profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
+                    }
+                }))
+            }
+            
+            self.present(sourceTypeAlert, animated: true, completion: nil)
+            
+        } else {
+            confirmBibNumber()
         }
-        
-        self.present(sourceTypeAlert, animated: true, completion: nil)
         
     }
     
@@ -984,6 +996,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     audioData = try Data(contentsOf: audioUrl)
                     shouldUploadAudio = true
                     self.audioPlayer =  try! AVAudioPlayer(contentsOf: audioUrl)
+                    self.audioPlayer.delegate = self
                     self.audioPlayer.enableRate = true
                     self.audioEngine = AVAudioEngine()
                     self.currentAudioDuration = self.audioPlayer.duration
@@ -1000,15 +1013,20 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         }
     }
     
-    func stopAllAudio() {
-        audioEngine.stop()
-        audioEngine.reset()
-        audioPlayer.stop()
-        audioPlayer.currentTime = 0.0
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        if (flag) {
+            let duration = GlobalFunctions.shared.convertDoubleToTime(duration: self.currentAudioDuration!)
+            self.savedRecordingButton.setTitle("PLAY SAVED RECORDING (\(duration))", for: .normal)
+            self.savedRecordingButton.isEnabled = true
+            self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor
+
+        }
     }
     
     @IBAction func playRecording(_ sender: Any) {
         try! session.setCategory(AVAudioSessionCategoryPlayback)
+        savedRecordingButton.setTitle("PLAYING...", for: .normal)
+        self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
         audioPlayer.play()
     }
     
