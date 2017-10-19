@@ -70,6 +70,8 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     var navBarHeight: CGFloat!
     var edits: [Edit] = []
     var options: [String] = []
+    var leftOptions: [String] = []
+    var rightOptions: [String] = []
     var profilePhotoImageData: Data?
     var videoData: Data?
     var videoUrl: URL?
@@ -86,7 +88,8 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     
     @IBOutlet weak var selectionView: UIView!
     @IBOutlet weak var categoryLabel: UILabel!
-    @IBOutlet weak var selectionTableView: UITableView!
+    @IBOutlet weak var selectionTableViewLeft: UITableView!
+    @IBOutlet weak var selectionTableViewRight: UITableView!
     
     @IBOutlet weak var aiv: UIActivityIndicatorView!
     @IBOutlet weak var uploadingLabel: UILabel!
@@ -131,6 +134,12 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     @IBOutlet weak var uploadVideoButton: UIButton!
     @IBOutlet weak var videoControls: UIToolbar!
     let playerViewBorderLayer = CAShapeLayer()
+    @IBOutlet weak var videoSlider: UISlider!
+    var timer = Timer()
+    @IBOutlet weak var playVideoButton: UIBarButtonItem!
+    var playerIsPlaying = false
+    @IBOutlet weak var timeElapsedBarButtonItem: UIBarButtonItem!
+    @IBOutlet weak var durationBarButtonItem: UIBarButtonItem!
     
     @IBOutlet weak var recordAudioButton: UIButton!
     @IBOutlet weak var recordAudioImageButton: UIButton!
@@ -177,7 +186,9 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                             "81","82","83","84","85","86","87","88","89","90",
                             "91","92","93","94","95","96","97","98","99","100",
                             "101","102","103","104","105","106","107","108","109","110",
-                            "111","112","113","114","115","116","117","118","119","120"]
+                            "111","112","113","114","115","116","117","118","119","120",
+                            "121","122","123","124","125","126","127","128","129","130",
+                            "131","132","133","134","135","136","137","138","139","140"]
 
     var currentTextField: UITextField?
     var pendingCurrentTextField: UITextField?
@@ -188,7 +199,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         toolbar.isTranslucent = false
 
         navBarHeight = (self.navigationController?.navigationBar.frame.size.height)! + UIApplication.shared.statusBarFrame.size.height
@@ -294,7 +305,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         self.dimView?.removeFromSuperview()
         selectionView.isHidden = true
         selectionView.isUserInteractionEnabled = false
-        selectionTableView.setContentOffset(CGPoint.zero, animated: false)
+        selectionTableViewLeft.setContentOffset(CGPoint.zero, animated: false)
         currentTextField?.resignFirstResponder()
     }
 
@@ -330,6 +341,13 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         topColorTextField.text = penalty.topColor
         pantColorTextField.text = penalty.pantColor
         penaltyTextField.text = penalty.penalty
+        if penaltyTextField.text == "Drafting" {
+            bikeLengthsTextField.isEnabled = true
+            secondsTextField.isEnabled = true
+        } else {
+            bikeLengthsTextField.isEnabled = false
+            secondsTextField.isEnabled = false
+        }
         bikeLengthsTextField.text = penalty.bikeLengths
         secondsTextField.text = penalty.seconds
         approximateMileTextField.text = penalty.approximateMile
@@ -364,6 +382,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
             }
         }
         
+        videoSlider.value = 0.0
         videoAiv.isHidden = false
         videoAiv.startAnimating()
         noVideoToPlayLabel.isHidden = true
@@ -378,6 +397,9 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     self.player.replaceCurrentItem(with: item)
                     self.noVideoToPlayLabel.isHidden = true
                     self.videoControls.backgroundColor = self.appDelegate.darkBlueColor
+                    let duration = CMTimeGetSeconds(item.asset.duration)
+                    print(duration)
+                    self.durationBarButtonItem.title = GlobalFunctions.shared.convertDoubleToTime(duration: duration)
                 } catch {
                     print("Couldn't write video to file")
                     self.noVideoToPlayLabel.isHidden = false
@@ -470,7 +492,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     }
     
     func playerDidFinishPlaying() {
-        player.seek(to: kCMTimeZero)
+        timer.invalidate()
     }
     
     func orientationChanged() {
@@ -565,7 +587,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
             textField.becomeFirstResponder()
             if textField != bibNumberTextField {
                 switch textField {
-                    case genderTextField: options = ["(Blank)", "Male", "Female"]
+                    case genderTextField: options = ["Male", "(Blank)", "Female"]
                     categoryLabel.text = "Gender"
                     case bikeTypeTextField: options = bikes
                     categoryLabel.text = "Bike Type"
@@ -587,7 +609,9 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     categoryLabel.text = "Approximate Mile"
                     default: options = []
                 }
-                selectionTableView.reloadData()
+                createLeftAndRight(options: options)
+                selectionTableViewLeft.reloadData()
+                selectionTableViewRight.reloadData()
                 showPopup()
             }
         }
@@ -951,16 +975,28 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     }
     
     @IBAction func playVideoButtonPressed(_ sender: Any) {
-        player.play()
+        if playerIsPlaying {
+            playVideoButton = UIBarButtonItem(barButtonSystemItem: .pause, target: self, action: "playVideoButtonPressed:")
+            playerIsPlaying = false
+            player.pause()
+            print(CMTimeGetSeconds((player.currentItem?.currentTime())!))
+            timer.invalidate()
+        } else {
+            playVideoButton = UIBarButtonItem(barButtonSystemItem: .play, target: self, action: "playVideoButtonPressed:")
+            playerIsPlaying = true
+            player.seek(to: (player.currentItem?.currentTime())!)
+            print(CMTimeGetSeconds((player.currentItem?.currentTime())!))
+            player.play()
+            timer = Timer.scheduledTimer(timeInterval: 0.1, target: self,   selector: (#selector(LogPenaltyViewController.updateTimer)), userInfo: nil, repeats: true)
+        }
+        
     }
     
-    @IBAction func pauseVideoButtonPressed(_ sender: Any) {
-        player.pause()
-    }
-    
-    @IBAction func startOverButtonPressed(_ sender: Any) {
-        player.pause()
-        player.seek(to: kCMTimeZero)
+    func updateTimer() {
+        let currentTime = CMTimeGetSeconds((player.currentItem?.currentTime())!)
+        let duration = CMTimeGetSeconds((player.currentItem?.duration)!)
+        videoSlider.value = Float(currentTime/duration)
+        timeElapsedBarButtonItem.title = GlobalFunctions.shared.convertDoubleToTime(duration: currentTime)
     }
     
     @IBAction func recordAudioButtonPressed(_ sender: Any) {
@@ -1057,13 +1093,52 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         
     }
     
+    @IBAction func videoSeeking(_ sender: Any) {
+        let percentPlayed = Double(videoSlider.value)
+        let duration = CMTimeGetSeconds((player.currentItem?.duration)!)
+        let position = percentPlayed*duration
+        timeElapsedBarButtonItem.title = GlobalFunctions.shared.convertDoubleToTime(duration: position)
+        let newTime = CMTimeMakeWithSeconds(position, 50000)
+        print(CMTimeGetSeconds(newTime))
+        player.seek(to: newTime)
+    }
+    
+    func createLeftAndRight(options: [String]) {
+        leftOptions = []
+        rightOptions = []
+        for i in 1...options.count {
+            if i <= (options.count+1)/2 {
+                leftOptions.append(options[i-1])
+            } else {
+                rightOptions.append(options[i-1])
+            }
+        }
+    }
+    
 }
 
 extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        if tableView == editsTableView {
+            return 44.0
+        } else if tableView == selectionTableViewLeft || tableView == selectionTableViewRight {
+            let h = selectionTableViewLeft.frame.size.height / CGFloat(leftOptions.count)
+            if h > 44.0 {
+                return h
+            } else {
+                return 44.0
+            }
+        } else {
+            return 44.0
+        }
+    }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if tableView == selectionTableView {
-            return options.count
+        if tableView == selectionTableViewLeft {
+            return leftOptions.count
+        } else if tableView == selectionTableViewRight {
+            return rightOptions.count
         } else {
             return edits.count
         }
@@ -1082,26 +1157,79 @@ extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
             cell.detailTextLabel?.text = GlobalFunctions.shared.formattedTimestamp(ts: edits[indexPath.row].timeStamp, includeDate: true, includeTime: true)
             return cell
             
-        } else {
-        
-            let cell = tableView.dequeueReusableCell(withIdentifier: "cell")! as UITableViewCell
+        } else if tableView == selectionTableViewLeft {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "cellLeft")! as UITableViewCell
+ 
+            colorCell(text: leftOptions[indexPath.row], cell: cell)
+            cell.textLabel?.font = UIFont.systemFont(ofSize: 20.0)
+            cell.textLabel?.textAlignment = .center
+            cell.preservesSuperviewLayoutMargins = false
+            cell.separatorInset = UIEdgeInsets.zero
+            cell.layoutMargins = UIEdgeInsets.zero
             
-            if options[indexPath.row] == "(Blank)" {
-                cell.textLabel?.attributedText = GlobalFunctions.shared.italic(string: "(Blank)", size: 17.0, color: .lightGray)
+            if leftOptions[indexPath.row] == "(Blank)" {
+                cell.textLabel?.attributedText = GlobalFunctions.shared.italic(string: "(Blank)", size: 20.0, color: .lightGray)
             } else {
-                cell.textLabel?.text = options[indexPath.row]
+                cell.textLabel?.text = leftOptions[indexPath.row]
             }
-            return cell
             
+            return cell
+                
+        } else {
+            
+            let cell = tableView.dequeueReusableCell(withIdentifier: "cellRight")! as UITableViewCell
+            
+            colorCell(text: rightOptions[indexPath.row], cell: cell)
+            cell.textLabel?.font = UIFont.systemFont(ofSize: 20.0)
+            cell.textLabel?.textAlignment = .center
+            cell.preservesSuperviewLayoutMargins = false
+            cell.separatorInset = UIEdgeInsets.zero
+            cell.layoutMargins = UIEdgeInsets.zero
+            
+            if rightOptions[indexPath.row] == "(Blank)" {
+                cell.textLabel?.attributedText = GlobalFunctions.shared.italic(string: "(Blank)", size: 20.0, color: .lightGray)
+            } else {
+                cell.textLabel?.text = rightOptions[indexPath.row]
+            }
+            
+            return cell
         }
         
     }
     
+    func colorCell(text: String, cell: UITableViewCell) {
+        switch text {
+            case "Black": cell.backgroundColor = .black
+            cell.textLabel?.textColor = .white
+            case "Blue": cell.backgroundColor = .blue
+            cell.textLabel?.textColor = .white
+            case "Gray": cell.backgroundColor = .gray
+            cell.textLabel?.textColor = .white
+            case "Green": cell.backgroundColor = .green
+            cell.textLabel?.textColor = .white
+            case "Red": cell.backgroundColor = .red
+            cell.textLabel?.textColor = .white
+            case "White": cell.backgroundColor = .white
+            cell.textLabel?.textColor = .black
+            case "Yellow": cell.backgroundColor = .yellow
+            cell.textLabel?.textColor = .black
+            default: cell.backgroundColor = .white
+            cell.textLabel?.textColor = .black
+        }
+    }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if tableView == selectionTableView {
+        if tableView == selectionTableViewLeft || tableView == selectionTableViewRight {
+            var selectedRow = 0
+            if tableView == selectionTableViewLeft {
+                selectedRow = indexPath.row
+            } else {
+                selectedRow = leftOptions.count + indexPath.row
+            }
+            
             if currentTextField == penaltyTextField {
                 
-                if penaltyTypes[indexPath.row].name == "Drafting" {
+                if penaltyTypes[selectedRow].name == "Drafting" {
                     bikeLengthsTextField.isEnabled = true
                     secondsTextField.isEnabled = true
                 } else {
@@ -1111,7 +1239,7 @@ extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
                     secondsTextField.text = ""
                 }
                 
-                if penaltyTypes[indexPath.row].color == "Blue" {
+                if penaltyTypes[selectedRow].color == "Blue" {
                     cardView.backgroundColor = appDelegate.darkBlueColor
                     cardLabel.text = "Blue Card"
                     cardLabel.textColor = .white
@@ -1129,7 +1257,7 @@ extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
             
             if currentTextField == genderTextField {
                 if profilePhotoImageData == nil {
-                    if options[indexPath.row] == "Female" {
+                    if options[selectedRow] == "Female" {
                         profilePhoto.setImage(UIImage(named: "Girl.png"), for: .normal)
                     } else {
                         profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
@@ -1137,10 +1265,10 @@ extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
                 }
             }
             
-            if options[indexPath.row] == "(Blank)" {
+            if options[selectedRow] == "(Blank)" {
                 currentTextField?.text = ""
             } else {
-                currentTextField?.text = options[indexPath.row]
+                currentTextField?.text = options[selectedRow]
             }
             
             dismissPopup()
@@ -1156,5 +1284,7 @@ extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
         }
         edits.sort { $0.timeStamp < $1.timeStamp }
     }
+    
+    
     
 }
