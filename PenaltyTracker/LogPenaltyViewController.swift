@@ -135,11 +135,11 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     @IBOutlet weak var videoControls: UIToolbar!
     let playerViewBorderLayer = CAShapeLayer()
     @IBOutlet weak var videoSlider: UISlider!
-    var timer = Timer()
+    var videoTimer = Timer()
     @IBOutlet weak var playVideoButton: UIBarButtonItem!
     var playerIsPlaying = false
-    @IBOutlet weak var timeElapsedBarButtonItem: UIBarButtonItem!
-    @IBOutlet weak var durationBarButtonItem: UIBarButtonItem!
+    @IBOutlet weak var videoTimeElapsed: UIBarButtonItem!
+    @IBOutlet weak var videoDuration: UIBarButtonItem!
     
     @IBOutlet weak var recordAudioButton: UIButton!
     @IBOutlet weak var recordAudioImageButton: UIButton!
@@ -147,8 +147,14 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     var audioPlayer: AVAudioPlayer!
     var audioEngine: AVAudioEngine!
     var session: AVAudioSession!
-    @IBOutlet weak var savedRecordingButton: UIButton!
+    @IBOutlet weak var audioSlider: UISlider!
+    @IBOutlet weak var audioTimeElapsed: UIBarButtonItem!
+    @IBOutlet weak var audioDuration: UIBarButtonItem!
+    @IBOutlet weak var audioControls: UIToolbar!
     var currentAudioDuration: Double?
+    var currentAudioPosition = 0.0
+    var audioIsPlaying = false
+    var audioTimer = Timer()
     
     @IBOutlet weak var notesLabel: UILabel!
 
@@ -278,7 +284,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         self.photoAiv.isHidden = true
         self.view.bringSubview(toFront: photoAiv)
         
-        roundBottomsOf(view: savedRecordingButton)
+        roundBottomsOf(view: audioControls)
         session = AVAudioSession.sharedInstance()
         try! session.setCategory(AVAudioSessionCategoryPlayback)
         
@@ -398,8 +404,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     self.noVideoToPlayLabel.isHidden = true
                     self.videoControls.backgroundColor = self.appDelegate.darkBlueColor
                     let duration = CMTimeGetSeconds(item.asset.duration)
-                    print(duration)
-                    self.durationBarButtonItem.title = GlobalFunctions.shared.convertDoubleToTime(duration: duration)
+                    self.videoDuration.title = GlobalFunctions.shared.convertDoubleToTime(duration: duration)
                 } catch {
                     print("Couldn't write video to file")
                     self.noVideoToPlayLabel.isHidden = false
@@ -412,9 +417,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
             }
         }
         
-        savedRecordingButton.setTitle("CHECKING FOR SAVED RECORDING...", for: .normal)
-        savedRecordingButton.isEnabled = false
-        savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
+        audioSlider.value = 0.0
         FirebaseClient.shared.getAudio(eventID: eventID!, penaltyID: penalty.uid) { (audio, error) -> () in
             if let audio = audio {
                 let currentAudioUrl = try! FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent("currentAudio.wav")
@@ -426,17 +429,12 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     self.currentAudioDuration = self.audioPlayer.duration
                     self.audioEngine = AVAudioEngine()
                     let duration = GlobalFunctions.shared.convertDoubleToTime(duration: self.currentAudioDuration!)
-                    self.savedRecordingButton.setTitle("PLAY SAVED RECORDING (\(duration))", for: .normal)
-                    self.savedRecordingButton.isEnabled = true
-                    self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor
+                    self.audioDuration.title = duration
                 } catch {
                     print("Couldn't write video to file")
                 }
             } else {
                 print("The error is \(error?.localizedDescription ?? "Error")")
-                self.savedRecordingButton.setTitle("NO RECORDING TO PLAY", for: .normal)
-                self.savedRecordingButton.isEnabled = false
-                self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
             }
         }
         
@@ -477,10 +475,6 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                 } else {
                     self.profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
                 }
-                self.savedRecordingButton.setTitle("NO RECORDING TO PLAY", for: .normal)
-                self.savedRecordingButton.isEnabled = false
-                self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
-                
             }
         }
         
@@ -492,7 +486,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     }
     
     func playerDidFinishPlaying() {
-        timer.invalidate()
+        videoTimer.invalidate()
     }
     
     func orientationChanged() {
@@ -512,13 +506,12 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     
     func redrawMediaView() {
         videoControls.layer.mask = nil
-        savedRecordingButton.layer.mask = nil
         
         playerView.layer.mask = nil
         playerViewBorderLayer.removeFromSuperlayer()
         
         roundBottomsOf(view: videoControls)
-        roundBottomsOf(view: savedRecordingButton)
+        roundBottomsOf(view: audioControls)
         
         roundTopsWithBorderOf(view: playerView)
         
@@ -610,6 +603,13 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     default: options = []
                 }
                 createLeftAndRight(options: options)
+                if leftOptions.count < 15 {
+                    selectionTableViewLeft.isScrollEnabled = false
+                    selectionTableViewRight.isScrollEnabled = false
+                } else {
+                    selectionTableViewLeft.isScrollEnabled = true
+                    selectionTableViewRight.isScrollEnabled = true
+                }
                 selectionTableViewLeft.reloadData()
                 selectionTableViewRight.reloadData()
                 showPopup()
@@ -974,39 +974,49 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         
     }
     
-    @IBAction func playVideoButtonPressed(_ sender: Any) {
+    //Video Control Methods
+    
+    @IBAction func videoButtonPressed(_ sender: Any) {
         if playerIsPlaying {
-            playVideoButton = UIBarButtonItem(barButtonSystemItem: .pause, target: self, action: "playVideoButtonPressed:")
+            changeButton(mediaType: "Video", item: .play, controls: videoControls)
             playerIsPlaying = false
             player.pause()
-            print(CMTimeGetSeconds((player.currentItem?.currentTime())!))
-            timer.invalidate()
+            videoTimer.invalidate()
         } else {
-            playVideoButton = UIBarButtonItem(barButtonSystemItem: .play, target: self, action: "playVideoButtonPressed:")
+            changeButton(mediaType: "Video", item: .pause, controls: videoControls)
             playerIsPlaying = true
             player.seek(to: (player.currentItem?.currentTime())!)
-            print(CMTimeGetSeconds((player.currentItem?.currentTime())!))
             player.play()
-            timer = Timer.scheduledTimer(timeInterval: 0.1, target: self,   selector: (#selector(LogPenaltyViewController.updateTimer)), userInfo: nil, repeats: true)
+            videoTimer = Timer.scheduledTimer(timeInterval: 0.01, target: self,   selector: (#selector(LogPenaltyViewController.updateVideoTimer)), userInfo: nil, repeats: true)
         }
         
     }
     
-    func updateTimer() {
+    func updateVideoTimer() {
         let currentTime = CMTimeGetSeconds((player.currentItem?.currentTime())!)
         let duration = CMTimeGetSeconds((player.currentItem?.duration)!)
         videoSlider.value = Float(currentTime/duration)
-        timeElapsedBarButtonItem.title = GlobalFunctions.shared.convertDoubleToTime(duration: currentTime)
+        videoTimeElapsed.title = GlobalFunctions.shared.convertDoubleToTime(duration: currentTime)
     }
+    
+    @IBAction func videoSeeking(_ sender: Any) {
+        changeButton(mediaType: "Video", item: .play, controls: videoControls)
+        playerIsPlaying = false
+        let percentPlayed = Double(videoSlider.value)
+        let duration = CMTimeGetSeconds((player.currentItem?.duration)!)
+        let position = percentPlayed*duration
+        videoTimeElapsed.title = GlobalFunctions.shared.convertDoubleToTime(duration: position)
+        let newTime = CMTimeMakeWithSeconds(position, 50000)
+        player.seek(to: newTime)
+    }
+    
+    //Audio Control Methods
     
     @IBAction func recordAudioButtonPressed(_ sender: Any) {
         
         if recordAudioButton.titleLabel?.text == "RECORD AUDIO" {
         
             recordAudioButton.setTitle("STOP RECORDING", for: .normal)
-            savedRecordingButton.setTitle("RECORDING...", for: .normal)
-            savedRecordingButton.isEnabled = false
-            self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
             audioUrl = try! FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false).appendingPathComponent("currentAudio.wav")
             try! session.setCategory(AVAudioSessionCategoryPlayAndRecord)
             try! audioRecorder = AVAudioRecorder(url: audioUrl!, settings: [:])
@@ -1037,9 +1047,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     self.audioEngine = AVAudioEngine()
                     self.currentAudioDuration = self.audioPlayer.duration
                     let duration = GlobalFunctions.shared.convertDoubleToTime(duration: self.currentAudioDuration!)
-                    self.savedRecordingButton.setTitle("PLAY SAVED RECORDING (\(duration))", for: .normal)
-                    self.savedRecordingButton.isEnabled = true
-                    self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor
+                    self.audioDuration.title = duration
                 } catch {
                     print("could not save audio")
                 }
@@ -1051,19 +1059,43 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         if (flag) {
-            let duration = GlobalFunctions.shared.convertDoubleToTime(duration: self.currentAudioDuration!)
-            self.savedRecordingButton.setTitle("PLAY SAVED RECORDING (\(duration))", for: .normal)
-            self.savedRecordingButton.isEnabled = true
-            self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor
-
+            audioSlider.value = 0.0
+            changeButton(mediaType: "Audio", item: .play, controls: audioControls)
+            audioIsPlaying = false
+            audioTimer.invalidate()
         }
     }
     
-    @IBAction func playRecording(_ sender: Any) {
-        try! session.setCategory(AVAudioSessionCategoryPlayback)
-        savedRecordingButton.setTitle("PLAYING...", for: .normal)
-        self.savedRecordingButton.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
-        audioPlayer.play()
+    func updateAudioTimer() {
+        audioSlider.value = Float(audioPlayer.currentTime/currentAudioDuration!)
+        audioTimeElapsed.title = GlobalFunctions.shared.convertDoubleToTime(duration: audioPlayer.currentTime)
+    }
+    
+    @IBAction func audioButtonPressed(_ sender: Any) {
+        
+        if audioIsPlaying {
+            changeButton(mediaType: "Audio", item: .play, controls: audioControls)
+            audioIsPlaying = false
+            audioPlayer.pause()
+            currentAudioPosition = audioPlayer.currentTime
+            audioTimer.invalidate()
+        } else {
+            changeButton(mediaType: "Audio", item: .pause, controls: audioControls)
+            audioIsPlaying = true
+            try! session.setCategory(AVAudioSessionCategoryPlayback)
+            audioPlayer.play()
+            audioTimer = Timer.scheduledTimer(timeInterval: 0.01, target: self,   selector: (#selector(LogPenaltyViewController.updateAudioTimer)), userInfo: nil, repeats: true)
+        }
+        
+    }
+    
+    @IBAction func audioSeeking(_ sender: Any) {
+        changeButton(mediaType: "Audio", item: .play, controls: audioControls)
+        audioIsPlaying = false
+        let percentPlayed = Double(audioSlider.value)
+        currentAudioPosition = percentPlayed*currentAudioDuration!
+        audioPlayer.currentTime = currentAudioPosition
+        audioTimeElapsed.title = GlobalFunctions.shared.convertDoubleToTime(duration: currentAudioPosition)
     }
     
     func roundBottomsOf(view: UIView) {
@@ -1093,14 +1125,16 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         
     }
     
-    @IBAction func videoSeeking(_ sender: Any) {
-        let percentPlayed = Double(videoSlider.value)
-        let duration = CMTimeGetSeconds((player.currentItem?.duration)!)
-        let position = percentPlayed*duration
-        timeElapsedBarButtonItem.title = GlobalFunctions.shared.convertDoubleToTime(duration: position)
-        let newTime = CMTimeMakeWithSeconds(position, 50000)
-        print(CMTimeGetSeconds(newTime))
-        player.seek(to: newTime)
+    func changeButton(mediaType: String, item: UIBarButtonSystemItem, controls: UIToolbar) {
+        var newButton: UIBarButtonItem!
+        if mediaType == "Video" {
+            newButton = UIBarButtonItem(barButtonSystemItem: item, target: self, action: #selector(LogPenaltyViewController.videoButtonPressed(_:)))
+        } else {
+            newButton = UIBarButtonItem(barButtonSystemItem: item, target: self, action: #selector(LogPenaltyViewController.audioButtonPressed(_:)))
+        }
+        var items = controls.items
+        items![2] = newButton
+        controls.setItems(items, animated: false)
     }
     
     func createLeftAndRight(options: [String]) {
@@ -1157,42 +1191,31 @@ extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
             cell.detailTextLabel?.text = GlobalFunctions.shared.formattedTimestamp(ts: edits[indexPath.row].timeStamp, includeDate: true, includeTime: true)
             return cell
             
-        } else if tableView == selectionTableViewLeft {
-            let cell = tableView.dequeueReusableCell(withIdentifier: "cellLeft")! as UITableViewCell
- 
-            colorCell(text: leftOptions[indexPath.row], cell: cell)
-            cell.textLabel?.font = UIFont.systemFont(ofSize: 20.0)
-            cell.textLabel?.textAlignment = .center
-            cell.preservesSuperviewLayoutMargins = false
-            cell.separatorInset = UIEdgeInsets.zero
-            cell.layoutMargins = UIEdgeInsets.zero
-            
-            if leftOptions[indexPath.row] == "(Blank)" {
-                cell.textLabel?.attributedText = GlobalFunctions.shared.italic(string: "(Blank)", size: 20.0, color: .lightGray)
-            } else {
-                cell.textLabel?.text = leftOptions[indexPath.row]
-            }
-            
-            return cell
-                
         } else {
             
-            let cell = tableView.dequeueReusableCell(withIdentifier: "cellRight")! as UITableViewCell
-            
-            colorCell(text: rightOptions[indexPath.row], cell: cell)
+            var currentOptions: [String] = []
+            if tableView == selectionTableViewLeft {
+                currentOptions = leftOptions
+            } else {
+                currentOptions = rightOptions
+            }
+                
+            let cell = tableView.dequeueReusableCell(withIdentifier: "cell")! as UITableViewCell
+     
+            colorCell(text: currentOptions[indexPath.row], cell: cell)
             cell.textLabel?.font = UIFont.systemFont(ofSize: 20.0)
             cell.textLabel?.textAlignment = .center
-            cell.preservesSuperviewLayoutMargins = false
-            cell.separatorInset = UIEdgeInsets.zero
-            cell.layoutMargins = UIEdgeInsets.zero
-            
-            if rightOptions[indexPath.row] == "(Blank)" {
+                
+            if currentOptions[indexPath.row] == "(Blank)" {
                 cell.textLabel?.attributedText = GlobalFunctions.shared.italic(string: "(Blank)", size: 20.0, color: .lightGray)
             } else {
-                cell.textLabel?.text = rightOptions[indexPath.row]
+                cell.textLabel?.text = currentOptions[indexPath.row]
             }
             
+            cell.textLabel?.numberOfLines = 0
+                
             return cell
+                
         }
         
     }
@@ -1243,7 +1266,7 @@ extension LogPenaltyViewController: UITableViewDelegate, UITableViewDataSource {
                     cardView.backgroundColor = appDelegate.darkBlueColor
                     cardLabel.text = "Blue Card"
                     cardLabel.textColor = .white
-                } else if penaltyTypes[indexPath.row].color == "Yellow" {
+                } else if penaltyTypes[selectedRow].color == "Yellow" {
                     cardView.backgroundColor = appDelegate.yellowColor
                     cardLabel.text = "Yellow Card"
                     cardLabel.textColor = .black
