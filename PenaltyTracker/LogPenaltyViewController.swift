@@ -136,7 +136,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     let playerViewBorderLayer = CAShapeLayer()
     @IBOutlet weak var videoSlider: UISlider!
     var videoTimer = Timer()
-    @IBOutlet weak var playVideoButton: UIBarButtonItem!
+    @IBOutlet weak var videoButton: UIBarButtonItem!
     var playerIsPlaying = false
     @IBOutlet weak var videoTimeElapsed: UIBarButtonItem!
     @IBOutlet weak var videoDuration: UIBarButtonItem!
@@ -155,6 +155,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     var currentAudioPosition = 0.0
     var audioIsPlaying = false
     var audioTimer = Timer()
+    @IBOutlet weak var audioButton: UIBarButtonItem!
     
     @IBOutlet weak var notesLabel: UILabel!
 
@@ -205,6 +206,8 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        adjustForOrientation()
         
         toolbar.isTranslucent = false
 
@@ -291,12 +294,16 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     }
     
     @IBAction func uploadVideoButtonPressed(_ sender: Any) {
-        let picker = UIImagePickerController()
-        picker.delegate = self
-        picker.allowsEditing = true
-        picker.sourceType = .photoLibrary
-        picker.mediaTypes = [kUTTypeMovie as String]
-        self.present(picker, animated: true, completion: nil)
+        if UIDevice.current.userInterfaceIdiom != .pad {
+            let picker = UIImagePickerController()
+            picker.delegate = self
+            picker.allowsEditing = true
+            picker.sourceType = .photoLibrary
+            picker.mediaTypes = [kUTTypeMovie as String]
+            self.present(picker, animated: true, completion: nil)
+        } else {
+            displayAlert(title: "Not Supported", message: "Uploading videos is not currently supported on iPad")
+        }
     }
     
     func showPopup() {
@@ -388,6 +395,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
             }
         }
         
+        videoButton.isEnabled = false
         videoSlider.value = 0.0
         videoAiv.isHidden = false
         videoAiv.startAnimating()
@@ -405,6 +413,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     self.videoControls.backgroundColor = self.appDelegate.darkBlueColor
                     let duration = CMTimeGetSeconds(item.asset.duration)
                     self.videoDuration.title = GlobalFunctions.shared.convertDoubleToTime(duration: duration)
+                    self.videoButton.isEnabled = true
                 } catch {
                     print("Couldn't write video to file")
                     self.noVideoToPlayLabel.isHidden = false
@@ -417,6 +426,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
             }
         }
         
+        audioButton.isEnabled = false
         audioSlider.value = 0.0
         FirebaseClient.shared.getAudio(eventID: eventID!, penaltyID: penalty.uid) { (audio, error) -> () in
             if let audio = audio {
@@ -430,6 +440,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     self.audioEngine = AVAudioEngine()
                     let duration = GlobalFunctions.shared.convertDoubleToTime(duration: self.currentAudioDuration!)
                     self.audioDuration.title = duration
+                    self.audioButton.isEnabled = true
                 } catch {
                     print("Couldn't write video to file")
                 }
@@ -445,7 +456,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         noVideoToPlayLabel.isHidden = false
         self.videoControls.backgroundColor = self.appDelegate.darkBlueColor.withAlphaComponent(0.5)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(LogPenaltyViewController.orientationChanged), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(LogPenaltyViewController.adjustForOrientation), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
         
         NotificationCenter.default.addObserver(self, selector: #selector(LogPenaltyViewController.playerDidFinishPlaying),
                                                name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: self.player.currentItem)
@@ -489,19 +500,33 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         videoTimer.invalidate()
     }
     
-    func orientationChanged() {
+    func adjustForOrientation() {
         
-        if UIDevice.current.orientation.isLandscape ||
-            UIDevice.current.orientation.isPortrait {
-            redrawMediaView()
-        }
-
-        if UIDevice.current.orientation.isLandscape {
-            self.contentViewHeight.constant = 2400
-        } else if UIDevice.current.orientation.isPortrait {
-            self.contentViewHeight.constant = 2000
+        if UIDevice.current.userInterfaceIdiom != .pad {
+            if UIDevice.current.orientation.isLandscape {
+                self.contentViewHeight.constant = 2400
+            } else if UIDevice.current.orientation.isPortrait {
+                self.contentViewHeight.constant = 2000
+            }
+        } else {
+            if UIDevice.current.orientation.isLandscape {
+                self.contentViewHeight.constant = 4000
+            } else if UIDevice.current.orientation.isPortrait {
+                self.contentViewHeight.constant = 3000
+            }
         }
        
+    }
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: {(_ context: UIViewControllerTransitionCoordinatorContext) -> Void in
+        }, completion: {(_ context: UIViewControllerTransitionCoordinatorContext) -> Void in
+            if UIDevice.current.orientation.isLandscape ||
+                UIDevice.current.orientation.isPortrait {
+                self.redrawMediaView()
+            }
+        })
     }
     
     func redrawMediaView() {
@@ -515,7 +540,10 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
         
         roundTopsWithBorderOf(view: playerView)
         
-        playerLayer.frame = self.playerView.bounds
+        if let playerLayer = self.playerLayer {
+            playerLayer.frame = self.playerView.bounds
+        }
+        
     }
 
     func dropPin(lat: Double, long: Double) {
@@ -897,7 +925,9 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
 
     @IBAction func recenterButtonPressed(_ sender: Any) {
         if let penalty = penalty {
-            myMapView.centerCoordinate = CLLocationCoordinate2D(latitude: Double(penalty.lat)!, longitude: Double(penalty.long)!)
+            if penalty.lat != "" {
+                myMapView.centerCoordinate = CLLocationCoordinate2D(latitude: Double(penalty.lat)!, longitude: Double(penalty.long)!)
+            }
         } else {
             myMapView.centerCoordinate = CLLocationCoordinate2D(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
         }
@@ -905,36 +935,42 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
     
     @IBAction func addProfilePhoto(_ sender: Any) {
         
-        if currentTextField != bibNumberTextField {
-            let picker = UIImagePickerController()
-            picker.delegate = self
-            picker.allowsEditing = true
-            
-            let sourceTypeAlert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-            sourceTypeAlert.addAction(UIAlertAction(title: "Take Photo", style: .default, handler: { (action) in
-                picker.sourceType = UIImagePickerControllerSourceType.camera
-                self.present(picker, animated: true, completion: nil)
-            }))
-            sourceTypeAlert.addAction(UIAlertAction(title: "Choose Photo", style: .default, handler: { (action) in
-                picker.sourceType = UIImagePickerControllerSourceType.photoLibrary
-                self.present(picker, animated: true, completion: nil)
-            }))
-            sourceTypeAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-            if profilePhotoImageData != nil {
-                sourceTypeAlert.addAction(UIAlertAction(title: "Remove Current Photo", style: .default, handler: { (action) in
-                    self.profilePhotoImageData = nil
-                    if self.genderTextField.text == "Female" {
-                        self.profilePhoto.setImage(UIImage(named: "Girl.png"), for: .normal)
-                    } else {
-                        self.profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
-                    }
+        if (UIDevice.current.userInterfaceIdiom != .pad) {
+        
+            if currentTextField != bibNumberTextField {
+                let picker = UIImagePickerController()
+                picker.delegate = self
+                picker.allowsEditing = true
+                
+                let sourceTypeAlert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+                sourceTypeAlert.addAction(UIAlertAction(title: "Take Photo", style: .default, handler: { (action) in
+                    picker.sourceType = UIImagePickerControllerSourceType.camera
+                    self.present(picker, animated: true, completion: nil)
                 }))
+                sourceTypeAlert.addAction(UIAlertAction(title: "Choose Photo", style: .default, handler: { (action) in
+                    picker.sourceType = UIImagePickerControllerSourceType.photoLibrary
+                    self.present(picker, animated: true, completion: nil)
+                }))
+                sourceTypeAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+                if profilePhotoImageData != nil {
+                    sourceTypeAlert.addAction(UIAlertAction(title: "Remove Current Photo", style: .default, handler: { (action) in
+                        self.profilePhotoImageData = nil
+                        if self.genderTextField.text == "Female" {
+                            self.profilePhoto.setImage(UIImage(named: "Girl.png"), for: .normal)
+                        } else {
+                            self.profilePhoto.setImage(UIImage(named: "Boy.png"), for: .normal)
+                        }
+                    }))
+                }
+                
+                self.present(sourceTypeAlert, animated: true, completion: nil)
+                
+            } else {
+                confirmBibNumber()
             }
             
-            self.present(sourceTypeAlert, animated: true, completion: nil)
-            
         } else {
-            confirmBibNumber()
+            displayAlert(title: "Not Supported", message: "Uploading photos is not currently supported on iPad")
         }
         
     }
@@ -960,6 +996,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     shouldUploadVideo = true
                     let item = AVPlayerItem(url: videoUrl)
                     self.player.replaceCurrentItem(with: item)
+                    self.videoButton.isEnabled = true
                 } catch {
                     print(error.localizedDescription)
                 }
@@ -1048,6 +1085,7 @@ class LogPenaltyViewController: UIViewController, UITextFieldDelegate, UITextVie
                     self.currentAudioDuration = self.audioPlayer.duration
                     let duration = GlobalFunctions.shared.convertDoubleToTime(duration: self.currentAudioDuration!)
                     self.audioDuration.title = duration
+                    self.audioButton.isEnabled = true
                 } catch {
                     print("could not save audio")
                 }
